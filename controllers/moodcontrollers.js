@@ -371,7 +371,7 @@ exports.postLogin = (req, res) => {
 // Assuming you have a route similar to this in your Express application
 exports.getSelectedMood = (req, res) => {
     // Assuming you have variables named 'moodId' and 'trigger' in your EJS file
-    const moodId = req.query.moodId || '';
+    const snapshotID = req.query.snapshotID || '';
     const trigger = req.query.trigger || '';
 
     // Fetch the selected card information based on the mood_id and/or trigger value
@@ -381,13 +381,13 @@ exports.getSelectedMood = (req, res) => {
         INNER JOIN snapshot_trigger ON snapshot.snapshot_id = snapshot_trigger.snapshot_id
         WHERE snapshot.snapshot_id = ? OR snapshot_trigger.trigger_id = ?`;
 
-    conn.query(selectSQL, [moodId, trigger], (err, rows) => {
+    conn.query(selectSQL, [snapshotID, trigger], (err, rows) => {
         if (err) {
             console.error('Error fetching selected card information:', err);
             res.redirect('/history'); // Redirect to the mood history page without making updates
         } else {
             const selectedCardInfo = rows[0] || {}; // Assuming only one row is expected
-            res.render('editdeletetrigger', { moodId, trigger, selectedCardInfo });
+            res.render('editdeletetrigger', { snapshotID, trigger, selectedCardInfo });
         }
     });
 };
