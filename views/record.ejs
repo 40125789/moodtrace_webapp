@@ -264,7 +264,7 @@
     <select id="contextualTriggerDropdown" name="selectedContextualTriggers" class="form-control" multiple>
         <!-- Options will be populated dynamically using JavaScript -->
     </select>
-    <div id="selectedContextualTriggers" style="margin-top: 5px;"></div>
+    <div id="selectedContextualTriggers" style="margin-top: 5px; display: flex; flex-wrap: wrap;"></div>
     <input type="hidden" id="selectedContextualTrigger" name="selectedContextualTrigger" value="">
 </div>
 
@@ -281,39 +281,48 @@
                     option.textContent = trigger;
                     dropdown.appendChild(option);
                 });
-
-                // Initialize Bootstrap Multiselect
-                $(dropdown).multiselect({
-                    includeSelectAllOption: true,
-                    enableFiltering: true
-                });
             })
             .catch(error => console.error('Error fetching contextual triggers:', error));
-
-        const selectedContextualTriggersDiv = document.getElementById('selectedContextualTriggers');
-        const selectedContextualTriggerInput = document.getElementById('selectedContextualTrigger');
-
-        // Event listener to handle the form submission
-        document.querySelector('form').addEventListener('submit', function (event) {
-            // Prevent the default form submission
-            event.preventDefault();
-
-            // Get selected options using Bootstrap Multiselect
-            const selectedOptions = $('#contextualTriggerDropdown option:selected');
-
-            // Map the values of the selected options
-            const selectedTriggers = selectedOptions.map(function () {
-                return this.value;
-            }).get();
-
-            // Update the hidden input value with the array of selected triggers
-            selectedContextualTriggerInput.value = JSON.stringify(selectedTriggers);
-
-            // You can now submit the form programmatically if needed
-            this.submit();
-        });
     });
+
+    function addSelectedTriggers() {
+        const selectedTriggersDropdown = document.getElementById('contextualTriggerDropdown');
+        const selectedTriggersDiv = document.getElementById('selectedContextualTriggers');
+        const selectedTriggersInput = document.getElementById('selectedContextualTrigger');
+
+        // Check if the dropdown is in focus, if yes, return
+        if (document.activeElement === selectedTriggersDropdown) {
+            return;
+        }
+
+        // Get selected options
+        const selectedOptions = selectedTriggersDropdown.selectedOptions;
+
+        // Clear the existing content in the div
+        selectedTriggersDiv.innerHTML = '';
+
+        // Update the hidden input with selected triggers if there are selected options
+        if (selectedOptions.length > 0) {
+            selectedTriggersInput.value = Array.from(selectedOptions, option => option.value).join(',');
+
+            // Iterate through selected options and add them to the div
+            for (const option of selectedOptions) {
+                const triggerDiv = document.createElement('div');
+                triggerDiv.textContent = option.value;
+                triggerDiv.style.marginRight = '5px'; // Adjust spacing as needed
+                selectedTriggersDiv.appendChild(triggerDiv);
+            }
+        } else {
+            selectedTriggersInput.value = ''; // No selected options, clear the hidden input
+        }
+    }
 </script>
+
+<!-- Add Trigger(s) Button -->
+<button type="button" onclick="addSelectedTriggers()" class="btn btn-primary">Add Trigger(s)</button>
+
+
+
 
     <!-- Emotion Form -->
 <form method="post" action="/record" onsubmit="return validateForm()">
@@ -328,6 +337,7 @@
             <i class="far fa-calendar-alt"></i>
         </div>
     </div>
+
     <!-- Validation Error Message for Date and Time -->
     <div id="datetimeError" style="color: red;"></div>
 </div>
@@ -375,6 +385,10 @@
 </body>
 
 </html>
+
+
+
+
 
 
 

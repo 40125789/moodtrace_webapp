@@ -14,6 +14,21 @@ exports.requireLogin = (req, res, next) => {
 };
 
 // POST method to insert a new mood snapshot record
+
+exports.getContextualTriggers = (req, res) => {
+    const selectTriggersSQL = 'SELECT trigger_name FROM contextual_trigger';
+
+    conn.query(selectTriggersSQL, (err, rows) => {
+        if (err) {
+            console.error('Error fetching triggers:', err);
+            res.status(500).json({ error: 'Internal Server Error' });
+        } else {
+            const contextualTriggers = rows.map(row => row.trigger_name);
+            res.json(contextualTriggers);
+        }
+    });
+};
+
 exports.postNewSnapshot = (req, res) => {
     const {
         enjoymentLevel,
@@ -42,52 +57,49 @@ exports.postNewSnapshot = (req, res) => {
         } else {
             const snapshotId = result.insertId;
 
-            // Check if selectedContextualTriggers is an array before processing
-            if (Array.isArray(selectedContextualTriggers)) {
-                // Insert triggers association with the snapshot
-                const insertTriggers = (triggers, callback) => {
-                    if (triggers.length === 0) {
-                        callback();  // Call the callback when all triggers are processed
-                    } else {
-                        const triggerName = triggers.shift();
+            // Convert to an array if not already
+            const triggersToInsert = Array.isArray(selectedContextualTriggers) ? selectedContextualTriggers : [selectedContextualTriggers];
 
-                        // Retrieve the trigger id from the contextual_trigger table
-                        const getTriggerIdSQL = 'SELECT trigger_id FROM contextual_trigger WHERE trigger_name = ?';
+            // Insert triggers association with the snapshot
+            const insertTriggers = (triggers, callback) => {
+                if (triggers.length === 0) {
+                    callback(); // Call the callback when all triggers are processed
+                } else {
+                    const triggerName = triggers.shift();
 
-                        conn.query(getTriggerIdSQL, [triggerName], (err, rows) => {
-                            if (err) {
-                                console.error('Error getting trigger id:', err);
+                    // Retrieve the trigger id from the contextual_trigger table
+                    const getTriggerIdSQL = 'SELECT trigger_id FROM contextual_trigger WHERE trigger_name = ?';
+
+                    conn.query(getTriggerIdSQL, [triggerName], (err, rows) => {
+                        if (err) {
+                            console.error('Error getting trigger id:', err);
+                            sendErrorRedirect('/error');
+                            callback(); // Ensure callback is called in case of an error
+                        } else {
+                            if (rows.length === 0) {
+                                console.error('Trigger not found:', triggerName);
                                 sendErrorRedirect('/error');
-                                callback();  // Ensure callback is called in case of an error
+                                callback(); // Ensure callback is called in case of an error
                             } else {
-                                if (rows.length === 0) {
-                                    console.error('Trigger not found:', triggerName);
-                                    sendErrorRedirect('/error');
-                                    callback();  // Ensure callback is called in case of an error
-                                } else {
-                                    const triggerId = rows[0].trigger_id;
-                                    conn.query(insertSnapshotTriggerSQL, [snapshotId, triggerId], (err) => {
-                                        if (err) {
-                                            console.error('Error inserting snapshot trigger:', err);
-                                            sendErrorRedirect('/error');
-                                            callback();  // Ensure callback is called in case of an error
-                                        } else {
-                                            insertTriggers(triggers, callback);  // Continue processing triggers
-                                        }
-                                    });
-                                }
+                                const triggerId = rows[0].trigger_id;
+                                conn.query(insertSnapshotTriggerSQL, [snapshotId, triggerId], (err) => {
+                                    if (err) {
+                                        console.error('Error inserting snapshot trigger:', err);
+                                        sendErrorRedirect('/error');
+                                        callback(); // Ensure callback is called in case of an error
+                                    } else {
+                                        insertTriggers(triggers, callback); // Continue processing triggers
+                                    }
+                                });
                             }
-                        });
-                    }
-                };
+                        }
+                    });
+                }
+            };
 
-                insertTriggers([...selectedContextualTriggers], () => {
-                    sendSuccessRedirect('/success');
-                });
-            } else {
-                console.error('selectedContextualTriggers is not an array');
-                sendErrorRedirect('/error');
-            }
+            insertTriggers(triggersToInsert, () => {
+                sendSuccessRedirect();
+            });
         }
     });
 
@@ -100,28 +112,13 @@ exports.postNewSnapshot = (req, res) => {
     }
 
     // Function to handle success and redirect
-    function sendSuccessRedirect(redirectUrl) {
+    function sendSuccessRedirect(redirectUrl = '/history') {
         if (!responseSent) {
             responseSent = true;
             res.redirect(redirectUrl);
         }
     }
 };
-
-exports.getContextualTriggers = (req, res) => {
-    const selectTriggersSQL = 'SELECT trigger_name FROM contextual_trigger';
-
-    conn.query(selectTriggersSQL, (err, rows) => {
-        if (err) {
-            console.error('Error fetching triggers:', err);
-            res.status(500).json({ error: 'Internal Server Error' });
-        } else {
-            const contextualTriggers = rows.map(row => row.trigger_name);
-            res.json(contextualTriggers);
-        }
-    });
-};
-
 
 
 
@@ -365,80 +362,191 @@ exports.postLogin = (req, res) => {
     });
 };
 
-
-
-
 // Assuming you have a route similar to this in your Express application
 exports.getSelectedMood = (req, res) => {
-    // Assuming you have variables named 'moodId' and 'trigger' in your EJS file
-    const snapshotID = req.query.snapshotID || '';
+    const moodId = req.query.moodId || ''; // Corrected from 'snapshotId' to 'moodId'
     const trigger = req.query.trigger || '';
 
-    // Fetch the selected card information based on the mood_id and/or trigger value
     const selectSQL = `
-        SELECT * 
-        FROM snapshot 
-        INNER JOIN snapshot_trigger ON snapshot.snapshot_id = snapshot_trigger.snapshot_id
-        WHERE snapshot.snapshot_id = ? OR snapshot_trigger.trigger_id = ?`;
+    SELECT 
+        snapshot.*, 
+        user.*, 
+        GROUP_CONCAT(contextual_trigger.trigger_name) AS contextual_triggers
+    FROM 
+        snapshot 
+    INNER JOIN 
+        user ON snapshot.user_id = user.user_id
+    LEFT JOIN 
+        snapshot_trigger ON snapshot.snapshot_id = snapshot_trigger.snapshot_id
+    LEFT JOIN 
+        contextual_trigger ON snapshot_trigger.trigger_id = contextual_trigger.trigger_id
+    WHERE 
+        snapshot.snapshot_id = ?
+    GROUP BY 
+        snapshot.snapshot_id, user.user_id;`;
 
-    conn.query(selectSQL, [snapshotID, trigger], (err, rows) => {
+
+    fetchContextualTriggers((err, contextualTriggers) => {
         if (err) {
-            console.error('Error fetching selected card information:', err);
-            res.redirect('/history'); // Redirect to the mood history page without making updates
-        } else {
-            const selectedCardInfo = rows[0] || {}; // Assuming only one row is expected
-            res.render('editdeletetrigger', { snapshotID, trigger, selectedCardInfo });
+            console.error('Error fetching contextual triggers:', err);
+            res.redirect('/history');
+            return;
         }
+
+        conn.query(selectSQL, [moodId, trigger], (queryErr, rows) => {
+            if (queryErr) {
+                console.error('Error fetching selected card information:', queryErr);
+                res.redirect('/history');
+                return;
+            }
+
+            const selectedCardInfo = rows[0] || {};
+            console.log('moodId:', moodId);
+            console.log('trigger:', trigger);
+            console.log('Selected Card Info:', selectedCardInfo);
+
+            
+
+            res.render('editdeletetrigger', { moodId, trigger, selectedCardInfo, contextualTriggers });
+        });
     });
+};
+
+// Function to fetch contextual triggers from the database
+function fetchContextualTriggers(callback) {
+   const query = 'SELECT trigger_name, trigger_id FROM contextual_trigger';
+
+   conn.query(query, (err, rows) => {
+       if (err) {
+            callback(err, null);
+            return;
+      }
+
+      const triggersArray = rows.map(row => row.trigger_name);
+      callback(null, triggersArray);
+   });
 };
 
 
 
-// Update route
+
 exports.updateMood = (req, res) => {
-    const trigger = req.query.trigger || '';
-    const { updatedContextualTrigger } = req.body;
+    const { updatedContextualTriggers, moodId } = req.body;// Assuming moodId is now in the request body
 
-    // Fetch the mood_id for the relevant card
-    const selectMoodIdSQL = 'SELECT snapshot_id FROM snapshot WHERE contextual_trigger = ?';
-    conn.query(selectMoodIdSQL, [trigger], (err, rows) => {
-        if (err) {
-            console.error('Error fetching snapshot_id:', err);
-            res.redirect('/history'); // Redirect to the mood history page without making updates
-        } else {
-            // Check if rows array is not empty before accessing moodId
-            const moodId = rows.length > 0 ? rows[0].snapshot_id : 'default';
+    // Convert updatedContextualTriggers to an array if it's a single value
+    const triggersArray = Array.isArray(updatedContextualTriggers)
+        ? updatedContextualTriggers
+        : [updatedContextualTriggers];
 
-            // Update only the relevant card
-            const updateSQL = 'UPDATE snapshot SET contextual_trigger = IFNULL(?, NULL) WHERE snapshot_id = ?';
-            conn.query(updateSQL, [updatedContextualTrigger.trim() || null, moodId], (err, rows) => {
-                if (err) {
-                    console.error('Error updating contextual trigger:', err);
-                    res.redirect('/history'); // Redirect to the mood history page without making updates
-                } else {
-                    res.redirect('/history'); // Redirect to the mood history page after update
+    // Update triggers associated with the given snapshotID
+    const updateTriggerSQL = `
+    INSERT IGNORE INTO snapshot_trigger (snapshot_id, trigger_id)
+    SELECT '${moodId}', trigger_id
+    FROM contextual_trigger
+    WHERE trigger_name IN (?) AND trigger_id NOT IN (
+        SELECT trigger_id
+        FROM snapshot_trigger
+        WHERE snapshot_id = '${moodId}'
+    );
+`;
+
+ 
+
+// delete triggers from the if the checkbox is deselected by the user
+const deleteTriggersSQL = `
+            DELETE FROM snapshot_trigger
+            WHERE snapshot_id = '${moodId}' AND trigger_id NOT IN (
+                SELECT trigger_id FROM contextual_trigger WHERE trigger_name IN (?)
+            );
+        `;
+
+        conn.query(deleteTriggersSQL, [triggersArray], (deleteErr) => {
+            if (deleteErr) {
+                console.error('Error deleting triggers:', deleteErr);
+                conn.rollback(() => {
+                    res.redirect('/error');
+                });
+                return;
+            }
+        });
+
+    // Execute each update statement for each trigger in parallel using Promise.all
+    const updatePromises = triggersArray.map((newTrigger) => {
+        return new Promise((resolve, reject) => {
+            // Use transaction for atomicity
+            conn.beginTransaction((beginTransactionErr) => {
+                if (beginTransactionErr) {
+                    reject(beginTransactionErr);
+                    return;
                 }
+
+                // Execute the update statement
+                conn.query(updateTriggerSQL, [newTrigger, moodId, newTrigger], (updateErr, updateResult) => {
+                    if (updateErr) {
+                        // Rollback the transaction if there's an error
+                        conn.rollback(() => {
+                            console.error('Error updating snapshot_trigger:', updateErr);
+                            reject(updateErr);
+                        });
+                    } else {
+                        // Commit the transaction if the update is successful
+                        conn.commit((commitErr) => {
+                            if (commitErr) {
+                                console.error('Error committing transaction:', commitErr);
+                                reject(commitErr);
+                            } else {
+                                resolve(updateResult);
+                                console.log('newTrigger:', newTrigger);
+                                console.log('moodId:', moodId);
+                            }
+                        });
+                    }
+                });
             });
-        }
+        });
     });
-}; 
+
+    // Wait for all updates to complete
+    Promise.all(updatePromises)
+        .then(() => {
+            res.redirect('/history'); // Redirect to the mood history page after successful update
+        })
+        .catch((error) => {
+            console.error('Error updating triggers:', error);
+            res.redirect('/error'); // Redirect to the error page in case of an error
+        
+
+        });
+};
 
 
-// Delete route
 exports.deleteMood = (req, res) => {
     const moodId = req.params.moodId;
 
     // Directly delete the emotional snapshot based on mood_id
-    const deleteSQL = 'DELETE FROM snapshot WHERE snapshot_id = ?';
-    conn.query(deleteSQL, [moodId], (err, rows) => {
-        if (err) {
-            console.error('Error deleting mood record:', err);
+    const deleteTriggerSQL = 'DELETE FROM snapshot_trigger WHERE snapshot_id = ?';
+    const deleteSnapshotSQL = 'DELETE FROM snapshot WHERE snapshot_id = ?';
+
+    // Execute the first DELETE statement
+    conn.query(deleteTriggerSQL, [moodId], (err1, rows1) => {
+        if (err1) {
+            console.error('Error deleting snapshot_trigger record:', err1);
             res.status(500).send('Internal Server Error'); // Send an error response
         } else {
-            res.redirect('/history'); // Redirect to the mood history page after deletion
+            // Execute the second DELETE statement only if the first one is successful
+            conn.query(deleteSnapshotSQL, [moodId], (err2, rows2) => {
+                if (err2) {
+                    console.error('Error deleting snapshot record:', err2);
+                    res.status(500).send('Internal Server Error'); // Send an error response
+                } else {
+                    res.redirect('/history'); // Redirect to the mood history page after deletion
+                }
+            });
         }
     });
 };
+
+
 
 exports.getLogout = (req, res) => {
     req.session.destroy(() => {

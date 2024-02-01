@@ -34,79 +34,106 @@
             margin-top: 20px;
         }
     </style>
+<!-- Include jQuery, Popper.js, and Bootstrap JS -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"
+    integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"
+    integrity="sha384-oBqDVmMz9ATKxIep9tiCxS/Z9fNfEXiDAYTujMAeBAsjFuCZSmKbSSUnQlmh/jp3"
+    crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.min.js"
+    integrity="sha384-cuYeSxntonz0PPNlHhBs68uyIAVpIIOZZ5JqeqvYYIcEL727kskC66kF92t6Xl2V"
+    crossorigin="anonymous"></script>
 
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
 <body>
-            <div class="col-md-6">
-                <div class="card">
-                    <div class="card-body">
-                        <h5 class="card-title">Mood Chart</h5>
-                        <div class="chart-container">
-                            <canvas id="moodChart"></canvas>
-                        </div>
+
+<div class="container">
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Mood Chart</h5>
+                    <div class="chart-container">
+                        <canvas id="myChart" width="800" height="400"></canvas>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+</div>
 
-    <script>
-        // Chart.js configuration
-        var ctx = document.getElementById('moodChart').getContext('2d');
-        var moodData = {
-            labels: [],
-            datasets: [{
-                label: 'Mood Tracking',
-                backgroundColor: 'rgba(75, 192, 192, 0.2)',
-                borderColor: 'rgba(75, 192, 192, 1)',
-                borderWidth: 1,
-                data: []
-            }]
-        };
+<script>
+function createChart() {
+    const rows = document.querySelectorAll('#moodGrid tbody tr');
 
-        var moodChart = new Chart(ctx, {
-            type: 'line',
-            data: moodData,
-            options: {
-                scales: {
-                    x: [{
-                        display: true,
-                        scaleLabel: {
-                            display: true,
-                            labelString: 'Date'
-                        }
-                    }],
-                    y: [{
-                        display: true,
-                        scaleLabel: {
-                            display: true,
-                            labelString: 'Mood Level'
-                        }
-                    }]
-                }
-            }
-        });
+    const labels = [];
+    const enjoymentData = [];
+    const sadnessData = [];
+    const angerData = [];
+    const contemptData = [];
+    const disgustData = [];
+    const fearData = [];
+    const surpriseData = [];
+    const contextualTriggers = [];
 
-        // Function to add data to the chart
-        function addData() {
-            var currentMood = document.getElementById('currentMood').value;
-            var currentDate = new Date().toLocaleDateString();
+    rows.forEach((row) => {
+        const date = new Date(row.cells[0].innerText);
+        labels.push(date.toLocaleDateString()); // Use dates as labels
+        enjoymentData.push(parseFloat(row.cells[2].innerText));
+        sadnessData.push(parseFloat(row.cells[3].innerText));
+        angerData.push(parseFloat(row.cells[4].innerText));
+        contemptData.push(parseFloat(row.cells[5].innerText));
+        disgustData.push(parseFloat(row.cells[6].innerText));
+        fearData.push(parseFloat(row.cells[7].innerText));
+        surpriseData.push(parseFloat(row.cells[8].innerText));
+        contextualTriggers.push(row.cells[9].innerText.split(', '));
+    });
 
-            // Add data to the chart
-            moodData.labels.push(currentDate);
-            moodData.datasets[0].data.push(currentMood);
+    const ctx = document.getElementById('myChart').getContext('2d');
+    const myChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [
+                { label: 'Enjoyment', data: enjoymentData, borderColor: 'rgba(75, 192, 192, 1)', borderWidth: 2, pointRadius: 4 },
+                { label: 'Sadness', data: sadnessData, borderColor: 'rgba(255, 99, 132, 1)', borderWidth: 2, pointRadius: 4 },
+                { label: 'Anger', data: angerData, borderColor: 'rgba(255, 205, 86, 1)', borderWidth: 2, pointRadius: 4 },
+                { label: 'Contempt', data: contemptData, borderColor: 'rgba(54, 162, 235, 1)', borderWidth: 2, pointRadius: 4 },
+                { label: 'Disgust', data: disgustData, borderColor: 'rgba(153, 102, 255, 1)', borderWidth: 2, pointRadius: 4 },
+                { label: 'Fear', data: fearData, borderColor: 'rgba(255, 159, 64, 1)', borderWidth: 2, pointRadius: 4 },
+                { label: 'Surprise', data: surpriseData, borderColor: 'rgba(255, 0, 0, 1)', borderWidth: 2, pointRadius: 4 },
+            ],
+        },
+        options: {
+            scales: {
+                x: { stacked: true },
+                y: {
+                    beginAtZero: true,
+                    max: 10, // Adjust the maximum value based on your emotional level range (1-10)
+                },
+            },
+            plugins: {
+                tooltip: {
+                    mode: 'index',
+                    intersect: false,
+                    callbacks: {
+                        label: function (tooltipItem, data) {
+                            const trigger = contextualTriggers[tooltipItem.dataIndex];
+                            return data.datasets[tooltipItem.datasetIndex].label + ': ' + tooltipItem.value + ' (' + trigger.join(', ') + ')';
+                        },
+                    },
+                },
+            },
+        },
+    });
+}
 
-            // Update the chart
-            moodChart.update();
-        }
-    </script>
+document.addEventListener('DOMContentLoaded', createChart);
+</script>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"
-        integrity="sha384-eJqfF8j5lL+yoF8j6Z/z9n6oZ7EjaTlkkVYFIqP61Z4vL3OFLD1u1KlLIh9dQNO"
-        crossorigin="anonymous"></script>
 </body>
 
 </html>
