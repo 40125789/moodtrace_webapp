@@ -15,7 +15,7 @@
             align-items: center;
             justify-content: center;
             min-height: 100vh;
-            background: powderblue;
+            background:rgb(67, 194, 217);
         }
 
         .form-login {
@@ -42,6 +42,20 @@
         .btn-block {
             width: 100%;
         }
+
+        .brand-link {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 1000; /* Set a high z-index to ensure it's on top of other elements */
+        }
+
+        .brand-link a {
+            color: white;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 18px; /* Adjust the font size as needed */
+        }
     </style>
 
     <!-- Bootstrap JS and Popper.js -->
@@ -52,10 +66,11 @@
         integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
         crossorigin="anonymous" referrerpolicy="no-referrer" />
 
-    <!-- Include your custom navbar script with defer -->
-    <script type="module" src="header/navbar.js" defer></script>
 </head>
 <body>
+    <div class="brand-link">
+        <a href="/index" class="navbar-brand">Mood Trace</a>
+    </div>
     <form method="post" action="/login" class="form-login">
         <span class="login-icon"><i class="fa-solid fa-right-to-bracket"></i></span>
         <h2>Login</h2>

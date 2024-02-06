@@ -30,88 +30,33 @@
 
     <!-- Flatpickr JS -->
     <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.9/dist/flatpickr.min.js"></script>
-    <!--<script type="module" src="header/navbar.js" defer></script>-->
-    <!-- <my-navbar></my-navbar> -->
+
+    <!--Navbar template and script-->
+    <script type="module" src="header/navbar.js" defer></script>
+    <my-navbar></my-navbar> 
 
     <style>
-      /* CSS for hover effect */
-    .table-bordered tbody tr:hover td {
-    background-color: #3bc0e8 !important; /* Use !important to ensure it overrides other styles */
-    cursor: pointer; /* Change cursor to pointer on hover to indicate it's clickable */
-}
-
-
-        /* CSS to make each column the same width */
-        table.table-bordered thead th,
-        table.table-bordered tbody td {
-            width: 10%; /* Adjust the width as needed */
-
-            /* Additional styles for specific columns */
-            text-align: center; /* Center align content */
-            white-space: nowrap; /* Avoid wrapping content */
-            overflow: hidden; /* Hide overflow */
-            text-overflow: ellipsis; /* Show ellipsis for overflow */
+        /* Unique namespace or identifier */
+        .mood-log .table-bordered tbody tr:hover td {
+            background-color: #3bc0e8 !important;
+            cursor: pointer;
         }
 
-        /* Make Date and Time and Contextual Trigger wider */
-        table.table-bordered thead th:first-child,
-        table.table-bordered tbody td:first-child,
-        table.table-bordered thead th:last-child,
-        table.table-bordered tbody td:last-child {
-            width: 15%; /* Adjust the width as needed */
+        /* Unique namespace or identifier */
+        .mood-log table.table-bordered thead th,
+        .mood-log table.table-bordered tbody td {
+            width: 10%;
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
     </style>
 
 </head>
 
 
-<body>
-    <nav class="navbar navbar-expand-lg bg-info navbar-dark">
-        <div class="container">
-            <a href="/" class="navbar-brand" style="font-weight: bold">Mood Trace</a>
-            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navmenu">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-    
-            <div class="collapse navbar-collapse" id="navmenu">
-                <ul class="navbar-nav">
-                    <% if (isloggedin) { %>
-                        <li class="nav-item">
-                            <a href="/dashboard" class="nav-link"><i class="fas fa-home"></i> Home</a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="/record" class="nav-link"><i class="fas fa-book"></i> Record</a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="/history" class="nav-link"><i class="fas fa-history"></i> History</a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="/statistics" class="nav-link"><i class="fas fa-chart-line"></i> Trends</a>
-                        </li>
-                    <% } %>
-                </ul>
-    
-                <!-- Conditionally render login/register or logout link based on user authentication -->
-                <ul class="navbar-nav ml-auto">
-                    <% if (isloggedin) { %>
-                        <!-- User is logged in -->
-                        <li class="nav-item">
-                            <a href="/logout" class="nav-link"><i class="fa-solid fa-right-to-bracket"></i> Log out</a>
-                        </li>
-                    <% } else { %>
-                        <!-- User is not logged in -->
-                        <li class="nav-item">
-                            <a href="/register" class="nav-link"><i class="fa-solid fa-user"></i> Register</a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="/login" class="nav-link"><i class="fa-solid fa-right-to-bracket"></i> Log in</a>
-                        </li>
-                    <% } %>
-                </ul>
-            </div>
-        </div>
-    </nav>
-    
+<body class="mood-log">
     <section class="bg-light text-dark p-5 text-center text-sm-start">
         <div class="container">
             <div class="d-sm-flex">
@@ -142,7 +87,7 @@
                                 </thead>
                                 <tbody>
                                     <% for (let mood of moods) { %>
-                                        <tr data-mood-id="<%= mood.snapshot_id %>" data-contextual-trigger="<%= mood.contextual_triggers %>" onclick="selectRow(this)" onmouseover="highlightRow(this)" onmouseout="unhighlightRow(this)">
+                                        <tr class="mood-log-row" data-mood-id="<%= mood.snapshot_id %>" data-contextual-trigger="<%= mood.contextual_triggers %>" onclick="selectRow(this)" onmouseover="highlightRow(this)" onmouseout="unhighlightRow(this)">
                                             <td style="font-weight: bold;"><%= new Date(mood.date_time).toLocaleString() %></td>
                                             <td><%= mood.snapshot_id %></td>
                                             <td><%= mood.enjoyment_level %></td>
@@ -163,17 +108,12 @@
                 </div>
             </div>
         </div>
-        <!-- Back Button -->
-        <button class="btn btn-secondary mb-3" onclick="goBack()">Back</button>
+      
     </section>
 
     
     
     <script>
-        function goBack() {
-            // Navigate back to the previous page
-            window.history.back();
-        }
     
         function selectRow(row) {
             // Get the contextual trigger value from the selected row

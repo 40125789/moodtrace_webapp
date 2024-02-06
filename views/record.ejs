@@ -34,147 +34,104 @@
     <!-- Include your custom navbar script with defer -->
     
     <style>
-        /* Custom styles for adjusting image placement */
-        .img-container {
-            display: flex;
-            justify-content: flex-end;
-        }
+       /* Custom styles for adjusting image placement */
+       .record-mood-img-container {
+        display: flex;
+        justify-content: flex-end;
+    }
 
-        .img-container img {
-            width: 100%; /* Adjust the width as needed */
-            
-        }
+    .record-mood-img-container img {
+        width: 100%; /* Adjust the width as needed */
+    }
 
-        /* Add shadow border and style for calendar button */
-        .datepicker-container,
-        .timepicker-container {
-            position: relative;
-        }
+    /* Add shadow border and style for calendar button */
+    .record-mood-datepicker-container,
+    .record-mood-timepicker-container {
+        position: relative;
+    }
 
-        .datepicker-container .form-control,
-        .timepicker-container .form-control {
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-        }
+    .record-mood-datepicker-container .form-control,
+    .record-mood-timepicker-container .form-control {
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
 
-        .datepicker-container .input-group-addon,
-        .timepicker-container .input-group-addon {
-            position: ab;
-            right: 12px;
-            top: 50%;
-            transform: translateY(-50%);
-            cursor: pointer;
-        }
-
-            
-        
+    .record-mood-datepicker-container .input-group-addon,
+    .record-mood-timepicker-container .input-group-addon {
+        position: ab;
+        right: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        cursor: pointer;
+    }
+       
+      
     </style>
+
+<script src="header/navbar.js" defer></script>
+<!--navbar template-->
+<my-navbar></my-navbar>
+
 </head>
 
 <body>
-
-    <nav class="navbar navbar-expand-lg bg-info navbar-dark">
-        <div class="container">
-            <a href="/" class="navbar-brand" style="font-weight: bold">Mood Trace</a>
-            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navmenu">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-    
-            <div class="collapse navbar-collapse" id="navmenu">
-                <ul class="navbar-nav">
-                    <% if (isloggedin) { %>
-                        <li class="nav-item">
-                            <a href="/dashboard" class="nav-link"><i class="fas fa-home"></i> Home</a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="/record" class="nav-link"><i class="fas fa-book"></i> Record</a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="/history" class="nav-link"><i class="fas fa-history"></i> History</a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="/statistics" class="nav-link"><i class="fas fa-chart-line"></i> Trends</a>
-                        </li>
-                    <% } %>
-                </ul>
-    
-                <!-- Conditionally render login/register or logout link based on user authentication -->
-                <ul class="navbar-nav ml-auto">
-                    <% if (isloggedin) { %>
-                        <!-- User is logged in -->
-                        <li class="nav-item">
-                            <a href="/logout" class="nav-link"><i class="fa-solid fa-right-to-bracket"></i> Log out</a>
-                        </li>
-                    <% } else { %>
-                        <!-- User is not logged in -->
-                        <li class="nav-item">
-                            <a href="/register" class="nav-link"><i class="fa-solid fa-user"></i> Register</a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="/login" class="nav-link"><i class="fa-solid fa-right-to-bracket"></i> Log in</a>
-                        </li>
-                    <% } %>
-                </ul>
-            </div>
-        </div>
-    </nav>
     <!-- Record Mood page -->
-<section class="bg-light text-dark p-5 text-center text-sm-start">
-    <div class="container mt-5">
-        <div class="d-sm-flex">
-            <div class="form-container shadow p-5"> <!-- Added styling to this div -->
+    <section class="bg-light text-dark p-5 text-center text-sm-start">
+        <div class="container mt-3 d-flex justify-content-center align-items-center"> <!-- Adjust top margin to move the form up and use flexbox -->
+            <div class="form-container shadow p-5 mb-3" style="max-width: 600px;"> <!-- Adjust maximum width -->
                 <h1>Hello <%= firstname %>! How are you feeling today?</h1>
                 <p class="lead my-4" style="font-weight: 600">
                     Record your emotion levels by moving the sliders below:
                 </p>
-
-              
+        
   <!-- Emotion Form -->
-<form method="post" action="/record">
+  <form method="post" action="/record">
+    <div class="d-flex flex-column"> <!-- Display sliders horizontally -->
 
     <!-- Display Emotion Level Scale for Enjoyment -->
-    <div class="mb-3">
+    <div class="row g-3"> <!-- Use Bootstrap grid system for horizontal layout -->
+        <div class="col-sm-6">
         <label for="enjoymentLevel" class="form-label" style="font-weight: bolder; color: #ffb74d;">Enjoyment <i class="far fa-grin-beam"></i>:</label>
         <label id="enjoymentIntensityLabel" class="form-label">Emotion level:</label>
         <input type="range" class="form-range enjoyment-range" min="0" max="10" id="enjoymentLevel" name="enjoymentLevel" required>
     </div>
 
     <!-- Display Emotion Level Scale for Sadness -->
-    <div class="mb-3">
+    <div class="col-sm-6">
         <label for="sadnessLevel" class="form-label" style="font-weight: bolder; color: #64b5f6;">Sadness <i class="far fa-sad-tear"></i>:</label>
         <label id="sadnessIntensityLabel" class="form-label" >Emotion level:</label>
         <input type="range" class="form-range sadness-range" min="0" max="10" id="sadnessLevel" name="sadnessLevel" required>
     </div>
 
     <!-- Display Emotion Level Scale for Anger -->
-    <div class="mb-3">
+    <div class="col-sm-6">
         <label for="angerLevel" class="form-label" style="font-weight: bolder; color: #ef5350;">Anger <i class="far fa-angry"></i>:</label>
         <label id="angerIntensityLabel" class="form-label">Emotion level:</label>
         <input type="range" class="form-range anger-range" min="0" max="10" id="angerLevel" name="angerLevel" required>
     </div>
 
     <!-- Display Emotion Level Scale for Contempt -->
-    <div class="mb-3">
+    <div class="col-sm-6">
         <label for="contemptLevel" class="form-label" style="font-weight: bolder; color: #a1887f;">Contempt <i class="far fa-grimace"></i>:</label>
         <label id="contemptIntensityLabel" class="form-label">Emotion level: </label>
         <input type="range" class="form-range contempt-range" min="0" max="10" id="contemptLevel" name="contemptLevel" required>
     </div>
 
     <!-- Display Emotion Level Scale for Disgust -->
-    <div class="mb-3">
+    <div class="col-sm-6">
         <label for="disgustLevel" class="form-label" style="font-weight: bolder; color: #4caf50;">Disgust <i class="far fa-dizzy"></i>:</label>
         <label id="disgustIntensityLabel" class="form-label">Emotion level: </label>
         <input type="range" class="form-range disgust-range" min="0" max="10" id="disgustLevel" name="disgustLevel" required>
     </div>
 
     <!-- Display Emotion Level Scale for Fear -->
-    <div class="mb-3">
+    <div class="col-sm-6">
         <label for="fearLevel" class="form-label" style="font-weight: bolder; color: #d32f2f;">Fear <i class="far fa-flushed"></i>:</label>
         <label id="fearIntensityLabel" class="form-label">Emotion level: </label>
         <input type="range" class="form-range fear-range" min="0" max="10" id="fearLevel" name="fearLevel" required>
     </div>
 
     <!-- Display Emotion Level Scale for Surprise -->
-    <div class="mb-3">
+    <div class="col-sm-6">
         <label for="surpriseLevel" class="form-label" style="font-weight: bolder; color: #ffcc80;">Surprise <i class="far fa-surprise"></i>:</label>
         <label id="surpriseIntensityLabel" class="form-label">Emotion level:</label>
         <input type="range" class="form-range surprise-range" min="0" max="10" id="surpriseLevel" name="surpriseLevel" required>
@@ -258,13 +215,14 @@
     }
 </script>
 
-<!-- Contextual Trigger Dropdown -->
+<!-- Contextual Trigger Checklist -->
 <div class="mb-3">
     <label class="form-label" style="font-weight: bolder;">Contextual Trigger(s) (optional):</label>
-    <select id="contextualTriggerDropdown" name="selectedContextualTriggers" class="form-control" multiple>
-        <!-- Options will be populated dynamically using JavaScript -->
-    </select>
-    <div id="selectedContextualTriggers" style="margin-top: 5px; display: flex; flex-wrap: wrap;"></div>
+    <div>
+        <select id="contextualTriggerDropdown" name="selectedContextualTriggers" class="form-control" multiple>
+            <!-- Options will be populated dynamically using JavaScript -->
+        </select>
+    </div>
     <input type="hidden" id="selectedContextualTrigger" name="selectedContextualTrigger" value="">
 </div>
 
@@ -274,54 +232,43 @@
         fetch('/api/contextual-triggers') // Adjust the API endpoint accordingly
             .then(response => response.json())
             .then(data => {
-                const dropdown = document.getElementById('contextualTriggerDropdown');
+                const dropdown = $('#contextualTriggerDropdown');
                 data.forEach(trigger => {
-                    const option = document.createElement('option');
-                    option.value = trigger;
-                    option.textContent = trigger;
-                    dropdown.appendChild(option);
+                    dropdown.append($('<option>', { value: trigger, text: trigger }));
                 });
+
+                // Initialize Bootstrap Multi-Select
+                dropdown.multiselect({
+                    buttonContainer: '<div class="btn-group" />',
+                    buttonText: function (options) {
+                        if (options.length === 0) {
+                            return 'None selected';
+                        }
+                        return options.length + ' selected';
+                    },
+                    buttonWidth: '400px',
+
+                });
+
+                // Add an event listener to the dropdown to handle selection changes
+                dropdown.change(addSelectedTriggers);
             })
             .catch(error => console.error('Error fetching contextual triggers:', error));
     });
 
     function addSelectedTriggers() {
-        const selectedTriggersDropdown = document.getElementById('contextualTriggerDropdown');
-        const selectedTriggersDiv = document.getElementById('selectedContextualTriggers');
-        const selectedTriggersInput = document.getElementById('selectedContextualTrigger');
+        const selectedTriggersDropdown = $('#contextualTriggerDropdown');
+        const selectedTriggersInput = $('#selectedContextualTrigger');
 
-        // Check if the dropdown is in focus, if yes, return
-        if (document.activeElement === selectedTriggersDropdown) {
-            return;
-        }
-
-        // Get selected options
-        const selectedOptions = selectedTriggersDropdown.selectedOptions;
-
-        // Clear the existing content in the div
-        selectedTriggersDiv.innerHTML = '';
+        // Clear the existing content in the hidden input
+        selectedTriggersInput.val('');
 
         // Update the hidden input with selected triggers if there are selected options
-        if (selectedOptions.length > 0) {
-            selectedTriggersInput.value = Array.from(selectedOptions, option => option.value).join(',');
-
-            // Iterate through selected options and add them to the div
-            for (const option of selectedOptions) {
-                const triggerDiv = document.createElement('div');
-                triggerDiv.textContent = option.value;
-                triggerDiv.style.marginRight = '5px'; // Adjust spacing as needed
-                selectedTriggersDiv.appendChild(triggerDiv);
-            }
-        } else {
-            selectedTriggersInput.value = ''; // No selected options, clear the hidden input
+        if (selectedTriggersDropdown.val() && selectedTriggersDropdown.val().length > 0) {
+            selectedTriggersInput.val(selectedTriggersDropdown.val().join(','));
         }
     }
 </script>
-
-<!-- Add Trigger(s) Button -->
-<button type="button" onclick="addSelectedTriggers()" class="btn btn-primary">Add Trigger(s)</button>
-
-
 
 
     <!-- Emotion Form -->

@@ -26,13 +26,15 @@ router.get('/statistics', controller.requireLogin,controller.getStatistics);
 router.get('/index', controller.getIndex);
 router.get('/login', controller.getLogin);
 router.get('/views/editdeletetrigger', controller.requireLogin,controller.getSelectedMood);
-router.get('/views/deletemood/:moodId', controller.requireLogin,controller.deleteMood);
 router.get('/logout', controller.getLogout);
 router.get('/api/contextual-triggers', controller.getContextualTriggers);
 router.get('/Register', controller.getRegister);
+router.get('/emotionalValues',controller.requireLogin, controller.getemotionalValues )
 
+// DELETE method to delete a snapshot record
+router.delete('/views/deletemood/:moodId',controller.deleteMood);
 
-router.post('/views/editdeletetrigger', controller.requireLogin,controller.updateMood);
+router.post('/views/editdeletetrigger',controller.updateMood);
 // POST method to insert a new mood snapshot record
 router.post('/record', controller.postNewSnapshot);
 // Handle registration form submission

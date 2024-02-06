@@ -2,138 +2,217 @@
 <html lang="en">
 
 <head>
+    
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mood Tracking Dashboard</title>
+    <title>Emotion Trends - Mood Trace</title>
 
     <!-- Bootstrap CSS -->
-    <link href="https://getbootstrap.com/docs/5.3/dist/css/bootstrap.min.css" rel="stylesheet"
-        integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"
+integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
 
-    <!-- Custom CSS -->
-    <style>
-        body {
-            font-family: 'Arial', sans-serif;
-            background-color: #f8f9fa;
-        }
 
-        .container {
-            margin-top: 50px;
-        }
+<!-- FontAwesome icons -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+integrity="correct-fontawesome-integrity-value" crossorigin="anonymous" referrerpolicy="no-referrer" />
 
-        .card {
-            margin-bottom: 20px;
-        }
+<!-- Include Moment.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
 
-        .btn-mood {
-            width: 100%;
-        }
+<!-- Include Luxon -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/luxon/2.0.2/luxon.min.js"></script>
 
-        .chart-container {
-            height: 300px;
-            margin-top: 20px;
-        }
-    </style>
-<!-- Include jQuery, Popper.js, and Bootstrap JS -->
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"
-    integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"
-    integrity="sha384-oBqDVmMz9ATKxIep9tiCxS/Z9fNfEXiDAYTujMAeBAsjFuCZSmKbSSUnQlmh/jp3"
-    crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.min.js"
-    integrity="sha384-cuYeSxntonz0PPNlHhBs68uyIAVpIIOZZ5JqeqvYYIcEL727kskC66kF92t6Xl2V"
-    crossorigin="anonymous"></script>
-
-<!-- Chart.js -->
+<!-- Include Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<!-- Include Chart.js adapters for Moment.js and Luxon -->
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-moment@3.1.1/dist/chartjs-adapter-moment.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon"></script>
+
+<!-- Include Chart.js Datalabels plugin -->
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
+
+<!-- Include jQuery, Popper.js, and Bootstrap JS -->
+<link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+
+<!--Link to custom style sheet-->
+<link rel="stylesheet" href="/styles/style.css" type="text/css">
+
+
+<!--navbar script-->
+<script src="header/navbar.js" defer></script>
+<!--navbar template-->
+<my-navbar></my-navbar>
+
+<style>
+  .statistics-body {
+      font-family: 'Arial', sans-serif;
+      background-color: #f8f9fa;
+   }
+
+   .statistics-container {
+      margin-top: 10px;
+   }
+
+   .statistics-card {
+      margin-bottom: 10px;
+   }
+
+   .statistics-chart-container {
+      height: 300px;
+      margin-top: 30px;
+   }
+</style>
+
 </head>
-
-<body>
-
-<div class="container">
-    <div class="row">
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-body">
-                    <h5 class="card-title">Mood Chart</h5>
-                    <div class="chart-container">
-                        <canvas id="myChart" width="800" height="400"></canvas>
+<body class="statistics-body">
+    <div class="statistics-container">
+        <div class="row">
+            <div class="col-md-12">
+                <div class="statistics-card">
+                    <div class="statistics-card-body">
+                        <h5 class="statistics-card-title">Emotion levels chart</h5>
+                        <!-- Canvas element with ID "statistics-chart" -->
+                        <canvas id="statistics-chart" width="800" height="400"></canvas>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
 
 <script>
-function createChart() {
-    const rows = document.querySelectorAll('#moodGrid tbody tr');
+document.addEventListener('DOMContentLoaded', async function () {
+    try {
+        const response = await fetch('/emotionalValues');
+        const data = await response.json();
 
-    const labels = [];
-    const enjoymentData = [];
-    const sadnessData = [];
-    const angerData = [];
-    const contemptData = [];
-    const disgustData = [];
-    const fearData = [];
-    const surpriseData = [];
-    const contextualTriggers = [];
+        // Simplify data processing
+        const formattedData = data.map(entry => ({
+            date_time: isValidDate(entry.date_time) ? luxon.DateTime.fromISO(entry.date_time) : null,
+            ...entry,
+        }));
 
-    rows.forEach((row) => {
-        const date = new Date(row.cells[0].innerText);
-        labels.push(date.toLocaleDateString()); // Use dates as labels
-        enjoymentData.push(parseFloat(row.cells[2].innerText));
-        sadnessData.push(parseFloat(row.cells[3].innerText));
-        angerData.push(parseFloat(row.cells[4].innerText));
-        contemptData.push(parseFloat(row.cells[5].innerText));
-        disgustData.push(parseFloat(row.cells[6].innerText));
-        fearData.push(parseFloat(row.cells[7].innerText));
-        surpriseData.push(parseFloat(row.cells[8].innerText));
-        contextualTriggers.push(row.cells[9].innerText.split(', '));
-    });
+        // Remove entries with invalid date_time
+        const validData = formattedData.filter(entry => entry.date_time !== null);
 
-    const ctx = document.getElementById('myChart').getContext('2d');
-    const myChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: labels,
-            datasets: [
-                { label: 'Enjoyment', data: enjoymentData, borderColor: 'rgba(75, 192, 192, 1)', borderWidth: 2, pointRadius: 4 },
-                { label: 'Sadness', data: sadnessData, borderColor: 'rgba(255, 99, 132, 1)', borderWidth: 2, pointRadius: 4 },
-                { label: 'Anger', data: angerData, borderColor: 'rgba(255, 205, 86, 1)', borderWidth: 2, pointRadius: 4 },
-                { label: 'Contempt', data: contemptData, borderColor: 'rgba(54, 162, 235, 1)', borderWidth: 2, pointRadius: 4 },
-                { label: 'Disgust', data: disgustData, borderColor: 'rgba(153, 102, 255, 1)', borderWidth: 2, pointRadius: 4 },
-                { label: 'Fear', data: fearData, borderColor: 'rgba(255, 159, 64, 1)', borderWidth: 2, pointRadius: 4 },
-                { label: 'Surprise', data: surpriseData, borderColor: 'rgba(255, 0, 0, 1)', borderWidth: 2, pointRadius: 4 },
-            ],
-        },
-        options: {
-            scales: {
-                x: { stacked: true },
-                y: {
-                    beginAtZero: true,
-                    max: 10, // Adjust the maximum value based on your emotional level range (1-10)
-                },
+        // Check if validData has elements
+        if (validData.length === 0) {
+            console.error('No valid data after processing.');
+            return;
+        }
+
+        // Extract emotions from the first entry
+        const emotions = Object.keys(validData[0]).filter(key => key !== 'date_time');
+
+        // Define predefined colors for each emotion
+        const emotionColors = {
+            anger: '#FF5733',
+            contempt: '#4682B4',
+            disgust: '#FFA500',
+            enjoyment: '#800080',
+            fear: '#8B4513',
+            sadness: '#FFC0CB',
+            surprise: '#00FFFF',
+        };
+
+        // Create datasets
+        const datasets = emotions.map(emotion => ({
+            label: emotion,
+            borderColor: emotionColors[emotion],
+            borderWidth: 2,
+            pointRadius: 4,
+            fill: false,
+            tension: 0.1,
+            data: validData.map(entry => ({
+                x: entry.date_time !== null ? entry.date_time : null,
+                y: entry[emotion],
+            })),
+        }));
+
+        // Create chart
+        const ctx = document.getElementById('statistics-chart').getContext('2d');
+        const myChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                datasets: datasets,
             },
-            plugins: {
-                tooltip: {
-                    mode: 'index',
-                    intersect: false,
-                    callbacks: {
-                        label: function (tooltipItem, data) {
-                            const trigger = contextualTriggers[tooltipItem.dataIndex];
-                            return data.datasets[tooltipItem.datasetIndex].label + ': ' + tooltipItem.value + ' (' + trigger.join(', ') + ')';
+            options: {
+                scales: {
+                    x: {
+                        type: 'time',
+                        time: {
+                            unit: 'day',
+                            displayFormats: {
+                                day: 'DDD', // Adjust the date format here
+                            },
+                            tooltipFormat: 'DDD', // Adjust the tooltip format here
+                        },
+                        title: {
+                            display: true,
+                            text: 'Date',
+                        },
+                    },
+                    y: {
+                        beginAtZero: true,
+                        max: 10,
+                        stepSize: 1,
+                        title: {
+                            display: true,
+                            text: 'Emotional Level',
+                        },
+                    },
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: (context) => {
+                                const { datasetIndex, parsed } = context;
+
+                                if (parsed && parsed.y !== undefined) {
+                                    return `${emotions[datasetIndex]}: ${parsed.y}`;
+                                }
+
+                                return 'Invalid Data';
+                            },
+                            afterLabel: (context) => {
+                                const { datasetIndex } = context;
+                                return `Contextual Triggers: ${validData[context.dataIndex].contextual_triggers}`;
+                            },
+                        },
+                    },
+                    legend: {
+                        labels: {
+                            boxWidth: 20,
+                            fontColor: 'black',
+                        },
+                    },
+                    elements: {
+                        point: {
+                            pointStyle: 'circle',
+                            backgroundColor: 'white',
+                            borderColor: 'black',
+                            borderWidth: 1,
+                            radius: 3,
                         },
                     },
                 },
             },
-        },
-    });
+        });
+
+        // Update chart rendering
+        myChart.update();
+    } catch (error) {
+        console.error('Error fetching data:', error);
+    }
+});
+
+// Function to check if a date string is valid
+function isValidDate(dateString) {
+    return luxon.DateTime.fromISO(dateString).isValid;
 }
-
-document.addEventListener('DOMContentLoaded', createChart);
 </script>
-
 </body>
-
 </html>

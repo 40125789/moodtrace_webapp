@@ -78,8 +78,8 @@ exports.postNewSnapshot = (req, res) => {
                         } else {
                             if (rows.length === 0) {
                                 console.error('Trigger not found:', triggerName);
-                                sendErrorRedirect('/error');
-                                callback(); // Ensure callback is called in case of an error
+                                // Continue without failing the insertion
+                                insertTriggers(triggers, callback);
                             } else {
                                 const triggerId = rows[0].trigger_id;
                                 conn.query(insertSnapshotTriggerSQL, [snapshotId, triggerId], (err) => {
@@ -98,6 +98,7 @@ exports.postNewSnapshot = (req, res) => {
             };
 
             insertTriggers(triggersToInsert, () => {
+                // No need to wait for triggers processing completion to redirect
                 sendSuccessRedirect();
             });
         }
@@ -128,6 +129,9 @@ exports.getRegister = (req, res) => {
     // Initialize registrationMessage as an empty string
     const registrationMessage = '';
     res.render('register', { registrationMessage });
+     // Redirect to the login page upon successful registration
+
+    
 };
   
 // Handle registration form submission
@@ -300,7 +304,9 @@ exports.getHistory = (req, res) => {
 
 
 exports.getStatistics = (req, res) => {
-    res.render('statistics');
+    const { isloggedin, userid } = req.session;
+    console.log(`User data from session: ${isloggedin}, ${userid}`);
+    res.render('statistics', { isloggedin});
 };
 
 
@@ -519,33 +525,126 @@ const deleteTriggersSQL = `
         });
 };
 
-
 exports.deleteMood = (req, res) => {
     const moodId = req.params.moodId;
-
-    // Directly delete the emotional snapshot based on mood_id
-    const deleteTriggerSQL = 'DELETE FROM snapshot_trigger WHERE snapshot_id = ?';
+    const selectTriggersSQL = 'SELECT trigger_id FROM snapshot_trigger WHERE snapshot_id = ?';
+    const deleteTriggerSQL = 'DELETE FROM snapshot_trigger WHERE trigger_id IN (?)';
     const deleteSnapshotSQL = 'DELETE FROM snapshot WHERE snapshot_id = ?';
 
-    // Execute the first DELETE statement
-    conn.query(deleteTriggerSQL, [moodId], (err1, rows1) => {
-        if (err1) {
-            console.error('Error deleting snapshot_trigger record:', err1);
-            res.status(500).send('Internal Server Error'); // Send an error response
-        } else {
-            // Execute the second DELETE statement only if the first one is successful
-            conn.query(deleteSnapshotSQL, [moodId], (err2, rows2) => {
-                if (err2) {
-                    console.error('Error deleting snapshot record:', err2);
-                    res.status(500).send('Internal Server Error'); // Send an error response
-                } else {
-                    res.redirect('/history'); // Redirect to the mood history page after deletion
-                }
-            });
+    // Begin a transaction
+    conn.beginTransaction((err) => {
+        if (err) {
+            console.error('Error beginning transaction:', err);
+            return res.status(500).send('Internal Server Error');
         }
+
+        // Retrieve all associated trigger IDs
+        conn.query(selectTriggersSQL, [moodId], (errSelect, triggerRows) => {
+            if (errSelect) {
+                return conn.rollback(() => {
+                    console.error('Error retrieving associated triggers:', errSelect);
+                    res.status(500).send('Internal Server Error');
+                });
+            }
+
+            const triggerIds = triggerRows.map(row => row.trigger_id);
+
+            // Delete associated triggers
+            conn.query(deleteTriggerSQL, [triggerIds], (errDelete, resultDelete) => {
+                if (errDelete) {
+                    return conn.rollback(() => {
+                        console.error('Error deleting associated triggers:', errDelete);
+                        res.status(500).send('Internal Server Error');
+                    });
+                }
+
+                // Then delete the snapshot
+                conn.query(deleteSnapshotSQL, [moodId], (errSnapshot, resultSnapshot) => {
+                    if (errSnapshot) {
+                        return conn.rollback(() => {
+                            console.error('Error deleting snapshot:', errSnapshot);
+                            res.status(500).send('Internal Server Error');
+                        });
+                    }
+
+                    // Commit the transaction if all delete queries are successful
+                    conn.commit((errCommit) => {
+                        if (errCommit) {
+                            return conn.rollback(() => {
+                                console.error('Error committing transaction:', errCommit);
+                                res.status(500).send('Internal Server Error');
+                            });
+                        }
+
+                        console.log(`Deleted mood with ID ${moodId} successfully.`);
+                        res.redirect('/history'); // Redirect to the mood history page after deletion
+                    });
+                });
+            });
+        });
     });
 };
+  
 
+
+
+//Getting emotional values for emotions chart
+exports.getemotionalValues = (req, res) => {
+    const { isloggedin, userid } = req.session;
+    console.log(`User data from session: ${isloggedin}, ${userid}`);
+
+    if (!isloggedin) {
+        // Redirect to '/login' or another appropriate page if the user is not logged in
+        return res.status(403).json({ error: 'User not logged in' });
+    }
+
+    
+    const selectSQL = `
+    SELECT 
+        snapshot.*,
+        user.*, 
+        GROUP_CONCAT(contextual_trigger.trigger_name) AS contextual_triggers
+    FROM 
+        snapshot 
+    INNER JOIN 
+        user ON snapshot.user_id = user.user_id
+    LEFT JOIN 
+        snapshot_trigger ON snapshot.snapshot_id = snapshot_trigger.snapshot_id
+    LEFT JOIN 
+        contextual_trigger ON snapshot_trigger.trigger_id = contextual_trigger.trigger_id
+    WHERE 
+        snapshot.user_id = ?
+    GROUP BY 
+        snapshot.snapshot_id
+    ORDER BY 
+        snapshot.date_time DESC`;
+
+
+    conn.query(selectSQL, [userid], (err, rows) => {
+        if (err) {
+            console.error('Error fetching emotional values:', err);
+            return res.status(500).json({ error: 'Internal Server Error' });
+        }
+
+        const data = rows.map(row => {
+            const emotions = ['enjoyment', 'sadness', 'anger', 'contempt', 'disgust', 'fear', 'surprise'];
+        
+            const emotionData = emotions.reduce((acc, emotion) => {
+                acc[emotion] = row[`${emotion}_level`];
+                return acc;
+            }, {});
+        
+            return {
+                date_time: row.date_time, // Include the date_time property
+                ...emotionData,
+                contextual_triggers: row.contextual_triggers || null,
+            };
+        });
+        
+        
+        res.json(data);
+    }); 
+};
 
 
 exports.getLogout = (req, res) => {
