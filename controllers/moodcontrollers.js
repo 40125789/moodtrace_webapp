@@ -530,61 +530,77 @@ exports.deleteMood = (req, res) => {
     const selectTriggersSQL = 'SELECT trigger_id FROM snapshot_trigger WHERE snapshot_id = ?';
     const deleteTriggerSQL = 'DELETE FROM snapshot_trigger WHERE trigger_id IN (?)';
     const deleteSnapshotSQL = 'DELETE FROM snapshot WHERE snapshot_id = ?';
-
+    
     // Begin a transaction
     conn.beginTransaction((err) => {
         if (err) {
             console.error('Error beginning transaction:', err);
             return res.status(500).send('Internal Server Error');
         }
-
+    
         // Retrieve all associated trigger IDs
         conn.query(selectTriggersSQL, [moodId], (errSelect, triggerRows) => {
             if (errSelect) {
-                return conn.rollback(() => {
-                    console.error('Error retrieving associated triggers:', errSelect);
-                    res.status(500).send('Internal Server Error');
-                });
+                return rollbackAndSendError(res, conn, 'Error retrieving associated triggers:', errSelect);
             }
-
+    
             const triggerIds = triggerRows.map(row => row.trigger_id);
-
-            // Delete associated triggers
-            conn.query(deleteTriggerSQL, [triggerIds], (errDelete, resultDelete) => {
-                if (errDelete) {
-                    return conn.rollback(() => {
-                        console.error('Error deleting associated triggers:', errDelete);
-                        res.status(500).send('Internal Server Error');
+    
+            // If there are associated triggers, delete them first
+            if (triggerIds.length > 0) {
+                conn.query(deleteTriggerSQL, [triggerIds], (errDelete, resultDelete) => {
+                    if (errDelete) {
+                        return rollbackAndSendError(res, conn, 'Error deleting associated triggers:', errDelete);
+                    }
+    
+                    // Then delete the snapshot
+                    conn.query(deleteSnapshotSQL, [moodId], (errSnapshot, resultSnapshot) => {
+                        if (errSnapshot) {
+                            return rollbackAndSendError(res, conn, 'Error deleting snapshot:', errSnapshot);
+                        }
+    
+                        // Commit the transaction if all delete queries are successful
+                        conn.commit((errCommit) => {
+                            if (errCommit) {
+                                return rollbackAndSendError(res, conn, 'Error committing transaction:', errCommit);
+                            }
+    
+                            console.log(`Deleted mood with ID ${moodId} successfully.`);
+                            res.redirect('/history'); // Redirect to the mood history page after deletion
+                        });
                     });
-                }
-
-                // Then delete the snapshot
+                });
+            } else {
+                // If there are no associated triggers, directly delete the snapshot
                 conn.query(deleteSnapshotSQL, [moodId], (errSnapshot, resultSnapshot) => {
                     if (errSnapshot) {
-                        return conn.rollback(() => {
-                            console.error('Error deleting snapshot:', errSnapshot);
-                            res.status(500).send('Internal Server Error');
-                        });
+                        return rollbackAndSendError(res, conn, 'Error deleting snapshot:', errSnapshot);
                     }
-
-                    // Commit the transaction if all delete queries are successful
+    
+                    // Commit the transaction if the delete query is successful
                     conn.commit((errCommit) => {
                         if (errCommit) {
-                            return conn.rollback(() => {
-                                console.error('Error committing transaction:', errCommit);
-                                res.status(500).send('Internal Server Error');
-                            });
+                            return rollbackAndSendError(res, conn, 'Error committing transaction:', errCommit);
                         }
-
+    
                         console.log(`Deleted mood with ID ${moodId} successfully.`);
                         res.redirect('/history'); // Redirect to the mood history page after deletion
                     });
                 });
-            });
+            }
         });
     });
 };
-  
+
+function rollbackAndSendError(res, conn, message, err) {
+    console.error(message, err);
+    conn.rollback((rollbackErr) => {
+        if (rollbackErr) {
+            console.error('Error rolling back transaction:', rollbackErr);
+        }
+        res.status(500).send('Internal Server Error');
+    });
+}
 
 
 

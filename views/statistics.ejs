@@ -45,43 +45,59 @@ integrity="correct-fontawesome-integrity-value" crossorigin="anonymous" referrer
 <!--navbar script-->
 <script src="header/navbar.js" defer></script>
 <!--navbar template-->
-<my-navbar></my-navbar>
+<my-navbar isloggedin="true"></my-navbar>
 
 <style>
-  .statistics-body {
-      font-family: 'Arial', sans-serif;
-      background-color: #f8f9fa;
-   }
+    .statistics-body {
+        font-family: 'Arial', sans-serif;
+        background-color: #f8f9fa;
+    }
 
-   .statistics-container {
-      margin-top: 10px;
-   }
+    .statistics-container {
+        margin-top: 10px;
+    }
 
-   .statistics-card {
-      margin-bottom: 10px;
-   }
+    .statistics-card {
+        margin-bottom: 10px;
+    }
 
-   .statistics-chart-container {
-      height: 300px;
-      margin-top: 30px;
-   }
+    .statistics-chart-container {
+        height: 300px;
+        margin-top: 30px;
+    }
+
+    .statistics-insights {
+        margin-top: 30px;
+    }
+
+    .statistics-insights .statistic-item {
+        margin-bottom: 10px;
+    }
 </style>
-
 </head>
 <body class="statistics-body">
-    <div class="statistics-container">
-        <div class="row">
-            <div class="col-md-12">
-                <div class="statistics-card">
-                    <div class="statistics-card-body">
-                        <h5 class="statistics-card-title">Emotion levels chart</h5>
-                        <!-- Canvas element with ID "statistics-chart" -->
-                        <canvas id="statistics-chart" width="800" height="400"></canvas>
-                    </div>
+<div class="statistics-container">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="statistics-card">
+                <div class="statistics-card-body">
+                    <h5 class="statistics-card-title">Emotion levels chart</h5>
+                    <!-- Canvas element with ID "statistics-chart" -->
+                    <canvas id="statistics-chart" width="800" height="400"></canvas>
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- Container for statistical insights -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="statistics-insights" id="statistics-container">
+                <!-- Statistical insights will be added here dynamically -->
+            </div>
+        </div>
+    </div>
+</div>
 
 <script>
 document.addEventListener('DOMContentLoaded', async function () {
@@ -89,14 +105,11 @@ document.addEventListener('DOMContentLoaded', async function () {
         const response = await fetch('/emotionalValues');
         const data = await response.json();
 
-        // Simplify data processing
-        const formattedData = data.map(entry => ({
+        // Simplify data processing and filter out invalid entries
+        const validData = data.map(entry => ({
             date_time: isValidDate(entry.date_time) ? luxon.DateTime.fromISO(entry.date_time) : null,
             ...entry,
-        }));
-
-        // Remove entries with invalid date_time
-        const validData = formattedData.filter(entry => entry.date_time !== null);
+        })).filter(entry => entry.date_time !== null);
 
         // Check if validData has elements
         if (validData.length === 0) {
@@ -178,8 +191,8 @@ document.addEventListener('DOMContentLoaded', async function () {
                                 return 'Invalid Data';
                             },
                             afterLabel: (context) => {
-                                const { datasetIndex } = context;
-                                return `Contextual Triggers: ${validData[context.dataIndex].contextual_triggers}`;
+                    
+                                return `Contextual Triggers: ${validData[context.dataIndex].contextual_triggers || 'None'}`;
                             },
                         },
                     },
@@ -202,12 +215,65 @@ document.addEventListener('DOMContentLoaded', async function () {
             },
         });
 
+        displayStatistics(validData);
+
         // Update chart rendering
         myChart.update();
     } catch (error) {
         console.error('Error fetching data:', error);
     }
 });
+
+// Function to display statistical insights
+function displayStatistics(data) {
+    const emotions = Object.keys(data[0]).filter(key => key !== 'date_time');
+    const statisticsContainer = document.getElementById('statistics-container');
+
+    emotions.forEach(emotion => {
+        const emotionData = data.map(entry => entry[emotion]);
+        const mean = calculateMean(emotionData);
+        const trend = analyzeTrend(emotionData);
+
+        // Create HTML elements to display statistics
+        const statisticElement = document.createElement('div');
+        statisticElement.innerHTML = `
+            <div class="statistic-item">
+                <h4>${emotion}</h4>
+                <p>Mean: ${mean}</p>
+                <p>Trend: ${trend}</p>
+            </div>
+        `;
+        statisticsContainer.appendChild(statisticElement);
+    });
+}
+
+// Function to calculate mean
+function calculateMean(data) {
+    const sum = data.reduce((acc, val) => acc + val, 0);
+    return sum / data.length;
+}
+
+// Function to analyze trend
+function analyzeTrend(data) {
+    // Calculate the difference between each adjacent data point
+    const differences = [];
+    for (let i = 1; i < data.length; i++) {
+        differences.push(data[i] - data[i - 1]);
+    }
+
+    // Calculate the overall trend based on the average difference
+    const averageDifference = differences.reduce((acc, val) => acc + val, 0) / differences.length;
+    
+    if (averageDifference > 0) {
+        return 'Increasing';
+    } else if (averageDifference < 0) {
+        return 'Decreasing';
+    } else {
+        return 'Stable';
+    }
+}
+
+
 
 // Function to check if a date string is valid
 function isValidDate(dateString) {

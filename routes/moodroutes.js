@@ -33,7 +33,7 @@ router.get('/emotionalValues',controller.requireLogin, controller.getemotionalVa
 
 // DELETE method to delete a snapshot record
 router.delete('/views/deletemood/:moodId',controller.deleteMood);
-
+//POST method to update snapshot contextual triggers
 router.post('/views/editdeletetrigger',controller.updateMood);
 // POST method to insert a new mood snapshot record
 router.post('/record', controller.postNewSnapshot);

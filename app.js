@@ -5,6 +5,7 @@ const session = require('express-session');
 const path = require('path');
 const router = require ('./routes/moodroutes');
 const bodyParser = require('body-parser');
+
 // Import your contextual triggers route
 const contextualTriggersRoute = require('./routes/moodroutes'); // Adjust the path accordingly
 //const PORT = 3000;

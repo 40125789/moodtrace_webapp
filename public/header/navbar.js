@@ -1,8 +1,8 @@
 class MyNavBar extends HTMLElement {
     connectedCallback() {
         const currentPath = window.location.pathname;
-        const isloggedin = true; // Replace with your actual logic for user authentication
-
+        const isloggedin = this.getAttribute('isloggedin');
+        
         this.innerHTML = `
             <nav class="navbar navbar-expand-lg bg-info navbar-dark">
                 <div class="container">
@@ -12,20 +12,21 @@ class MyNavBar extends HTMLElement {
                     </button>
 
                     <div class="collapse navbar-collapse" id="navmenu">
-                        <ul class="navbar-nav">
-                            <li class="nav-item ${currentPath === '/dashboard' ? 'active' : ''}">
-                                <a href="/dashboard" class="nav-link"><i class="fas fa-home"></i> Home</a>
-                            </li>
-                            <li class="nav-item ${currentPath === '/record' ? 'active' : ''}">
-                                <a href="/record" class="nav-link"><i class="fas fa-book"></i> Record</a>
-                            </li>
-                            <li class="nav-item ${currentPath === '/history' ? 'active' : ''}">
-                                <a href="/history" class="nav-link"><i class="fas fa-history"></i> History</a>
-                            </li>
-                            <li class="nav-item ${currentPath === '/statistics' ? 'active' : ''}">
-                                <a href="/statistics" class="nav-link"><i class="fas fa-chart-line"></i> Trends</a>
-                            </li>
-                        </ul>
+                        ${isloggedin ? `
+                            <ul class="navbar-nav">
+                                <li class="nav-item ${currentPath === '/dashboard' ? 'active' : ''}">
+                                    <a href="/dashboard" class="nav-link"><i class="fas fa-home"></i> Home</a>
+                                </li>
+                                <li class="nav-item ${currentPath === '/record' ? 'active' : ''}">
+                                    <a href="/record" class="nav-link"><i class="fas fa-book"></i> Record</a>
+                                </li>
+                                <li class="nav-item ${currentPath === '/history' ? 'active' : ''}">
+                                    <a href="/history" class="nav-link"><i class="fas fa-history"></i> History</a>
+                                </li>
+                                <li class="nav-item ${currentPath === '/statistics' ? 'active' : ''}">
+                                    <a href="/statistics" class="nav-link"><i class="fas fa-chart-line"></i> Trends</a>
+                                </li>
+                            </ul>` : ''}
 
                         <!-- Conditionally render login/register or logout link based on user authentication -->
                         <ul class="navbar-nav ml-auto">
