@@ -322,7 +322,6 @@ function updateStatisticsContainer(filteredData) {
     const statisticsContainer = document.getElementById('statistics-container');
     statisticsContainer.innerHTML = ''; // Clear previous content
 
-    if (filteredData.length >= 3) {
     emotions.forEach(emotion => {
         const emotionData = filteredData.map(entry => entry[emotion]);
         const mean = calculateMean(emotionData);
@@ -341,10 +340,6 @@ function updateStatisticsContainer(filteredData) {
         `;
         statisticsContainer.appendChild(statisticColumn);
     });
-} else {
-    // If filteredData has less than 3 entries, hide the statistics container
-    statisticsContainer.style.display = 'none';
-}
 }
 
 function findMostCommonTriggers(filteredData) {
