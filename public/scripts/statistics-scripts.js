@@ -211,12 +211,23 @@ function filterByDate() {
     } else {
         document.getElementById('statistics-chart').style.display = 'none'; // Hide the chart container
         document.getElementById('no-data-message').style.display = 'block'; // Show the "no data available" message
+        document.getElementById('common-triggers-container').style.display = 'none'; //Hide the contextual trigger container if no chart data
+        clearStatisticsContainer(); // Clear statistics container
+        clearCommonTriggersContainer(); // Clear common triggers container
     }
-
-    // Update statistics container
-    updateStatisticsContainer(filteredData);
-  
 }
+
+function clearStatisticsContainer() {
+    const statisticsContainer = document.getElementById('statistics-container');
+    statisticsContainer.innerHTML = ''; // Clear previous content
+}
+
+function clearCommonTriggersContainer() {
+    const commonTriggersContainer = document.getElementById('common-triggers-container');
+    commonTriggersContainer.innerHTML = ''; // Clear previous content
+}
+
+
 function updateChartAndTriggers(filteredData) {
     if (filteredData.length >= 3) {
         updateChart(filteredData);
@@ -224,12 +235,15 @@ function updateChartAndTriggers(filteredData) {
         displayCommonTriggers(mostCommonTriggers);
         document.getElementById('statistics-chart').style.display = 'block'; // Show the chart container
         document.getElementById('no-data-message').style.display = 'none'; // Hide the "no data available" message
+        document.getElementById('common-triggers-container').style.display = 'block'; // Show the common triggers container
     } else {
         document.getElementById('statistics-chart').style.display = 'none'; // Hide the chart container
         document.getElementById('no-data-message').style.display = 'block'; // Show the "no data available" message
-        
+        document.getElementById('common-triggers-container').style.display = 'none'; // Hide the common triggers container
+        clearCommonTriggers(); // Clear common triggers content
     }
 }
+
 
 
 
@@ -264,7 +278,7 @@ function displayCommonTriggers(mostCommonTriggers) {
         commonTriggersContainer.style.display = 'block';
     } else {
         // Clear any previous content and display a message when there are no triggers to show
-        commonTriggersContainer.innerHTML = '<p>No triggers to show</p>';
+        commonTriggersContainer.innerHTML = '';
         commonTriggersContainer.style.display = 'none'; // Hide the container
     }
 }
@@ -398,38 +412,39 @@ function displayStatistics(data, mostCommonTriggers) {
 
     const commonTriggersContainer = document.getElementById('common-triggers-container');
 
+   
     // Check if there are triggers to display
-    if (mostCommonTriggers.length >= 3) {
-        // Create a header for the top contextual triggers
-        const header = document.createElement('h3');
-        header.textContent = 'Top Contextual Triggers';
-        commonTriggersContainer.appendChild(header);
-    
-        // Loop through each trigger and create containers if needed
-        mostCommonTriggers.forEach(trigger => {
-            // Create a container for each trigger
-            const triggerContainer = document.createElement('div');
-            triggerContainer.classList.add('trigger-container'); // Add a class for styling if needed
-    
-            // Set the content of the container
-            triggerContainer.innerHTML = `
-                <div class="panel-body">
-                    <h5>${trigger}</h5>
-                </div>
-            `;
-    
-            // Append the container to the commonTriggersContainer
-            commonTriggersContainer.appendChild(triggerContainer);
-        });
-    
-        // Display the container since there is information to display
-        commonTriggersContainer.style.display = 'block';
-    } else {
-        // Clear any previous content and display a message when there are no triggers to show
-        commonTriggersContainer.innerHTML = '<p>No triggers to show</p>';
-        commonTriggersContainer.style.display = 'none'; // Hide the container
-    }
-}    
+if (mostCommonTriggers.length >= 3) {
+    // Create a header for the top contextual triggers
+    const header = document.createElement('h3');
+    header.textContent = 'Top Contextual Triggers';
+    commonTriggersContainer.appendChild(header);
+
+    // Loop through each trigger and create containers if needed
+    mostCommonTriggers.forEach(trigger => {
+        // Create a container for each trigger
+        const triggerContainer = document.createElement('div');
+        triggerContainer.classList.add('trigger-container'); // Add a class for styling if needed
+
+        // Set the content of the container
+        triggerContainer.innerHTML = `
+            <div class="panel-body">
+                <h5>${trigger}</h5>
+            </div>
+        `;
+
+        // Append the container to the commonTriggersContainer
+        commonTriggersContainer.appendChild(triggerContainer);
+    });
+
+    // Display the container since there is information to display
+    commonTriggersContainer.style.display = 'block';
+} else {
+    // Hide the container and clear any previous content
+    commonTriggersContainer.innerHTML = ''; // Clear previous content
+    commonTriggersContainer.style.display = 'none'; // Hide the container
+}
+}
 
 // Function to get emotion color
 function getEmotionColor(emotion) {

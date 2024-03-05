@@ -114,6 +114,7 @@
         border-radius: 10px; /* Add border radius */
         padding: 20px; /* Add padding */
         background-color: rgb(14, 212, 234); /* Add background color */
+        display: none; 
     }
     
     /* Adjust the style of the common triggers list */
