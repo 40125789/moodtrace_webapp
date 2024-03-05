@@ -199,43 +199,39 @@ exports.getRecord = (req, res) => {
    
     }
 
-
-exports.getHistory = (req, res) => {
-    const { userid } = req.session;
-    console.log(`User data from session: ${userid}`);
-
+    exports.getHistory = (req, res) => {
+        const { userid } = req.session;
+        console.log(`User data from session: ${userid}`);
     
         const endpoint = `http://localhost:3002/history/${userid}`;
-
+    
         axios.get(endpoint, {
             method: 'GET',
             headers: {
-        'x-api-key': apiKey
-    }
-})
-        
-            .then((response) => {
-                const data = response.data.result;
-                console.log(data); // Log the response data to inspect its structure
-
-                // Check if response data is an array
-                if (Array.isArray(data)) {
-                    // Render the history page with the retrieved moods
-                    res.render('history', { moods: data, user_id: userid });
-                } else {
-                    // Handle case where response data is not an array
-                    console.error("Invalid response format. Expected an array.");
-                    res.redirect('/record');
-                }
-            })
-            .catch((error) => {
-                console.error('Error fetching mood records:', error);
-                // Redirect to '/record' or another appropriate page in case of an error
-                res.redirect('/record');
-            });
-
+                'x-api-key': apiKey
+            }
+        })
+        .then((response) => {
+            const data = response.data.result;
+            console.log(data); // Log the response data to inspect its structure
     
-};
+            // Check if response data is an array
+            if (Array.isArray(data)) {
+                // Render the history page with the retrieved moods
+                res.render('history', { moods: data, user_id: userid });
+            } else {
+                // Handle case where response data is not an array
+                console.error("Invalid response format. Expected an array.");
+                res.redirect('/record');
+            }
+        })
+        .catch((error) => {
+            console.error('Error fetching mood records:', error);
+            // Redirect to '/record' or another appropriate page in case of an error
+            res.redirect('/record');
+        });
+    };
+    
 
 
 exports.getStatistics = (req, res) => {
@@ -262,20 +258,19 @@ exports.getLogin = (req, res) => {
 
 exports.postLogin = (req, res) => {
     const { email, password } = req.body;
-    const endpoint = 'http://localhost:3002/login'; 
+    const endpoint = 'http://localhost:3002/login';
 
     axios.post(endpoint, { email, password })
         .then((response) => {
             console.log('Response data:', response.data); // Log the response data
 
             if (response.data && response.data.success) {
-                if (req.session.isloggedin) {
-                    return res.redirect('/dashboard');
-                } else {
-                    req.session.isloggedin = true;
-                    req.session.userid = response.data.userid;
-                    return res.redirect('/dashboard');
-                }
+                req.session.isloggedin = true;
+                req.session.userid = response.data.userid;
+                
+                // Redirect the user to the original route or the dashboard
+                const orig_route = req.session.route || '/dashboard';
+                return res.redirect(`${orig_route}`);
             } else {
                 // Handle unsuccessful login
                 let errMessage = 'An error occurred while logging in';

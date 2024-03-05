@@ -237,7 +237,7 @@ function displayCommonTriggers(mostCommonTriggers) {
     const commonTriggersContainer = document.getElementById('common-triggers-container');
     commonTriggersContainer.innerHTML = ''; // Clear previous content
 
-    if (mostCommonTriggers.length > 0) {
+    if (mostCommonTriggers.length >= 3) {
         // Create a header for the top contextual triggers
         const header = document.createElement('h3');
         header.textContent = 'Top Contextual Triggers';
@@ -322,6 +322,7 @@ function updateStatisticsContainer(filteredData) {
     const statisticsContainer = document.getElementById('statistics-container');
     statisticsContainer.innerHTML = ''; // Clear previous content
 
+    if (filteredData.length >= 3) {
     emotions.forEach(emotion => {
         const emotionData = filteredData.map(entry => entry[emotion]);
         const mean = calculateMean(emotionData);
@@ -340,6 +341,10 @@ function updateStatisticsContainer(filteredData) {
         `;
         statisticsContainer.appendChild(statisticColumn);
     });
+} else {
+    // If filteredData has less than 3 entries, hide the statistics container
+    statisticsContainer.style.display = 'none';
+}
 }
 
 function findMostCommonTriggers(filteredData) {
@@ -399,7 +404,7 @@ function displayStatistics(data, mostCommonTriggers) {
     const commonTriggersContainer = document.getElementById('common-triggers-container');
 
     // Check if there are triggers to display
-    if (mostCommonTriggers.length > 0) {
+    if (mostCommonTriggers.length >= 3) {
         // Create a header for the top contextual triggers
         const header = document.createElement('h3');
         header.textContent = 'Top Contextual Triggers';

@@ -49,10 +49,12 @@
             </div>
             <input type="submit" class="btn btn-success btn-block" name="submit" value="Submit">
             <p>Already have an account? <a href="/Login">Login</a></p>
+            
            
             <!-- Display error messages if they exist -->
             <div id="errorMessages" class="alert alert-danger" role="alert" <% if (!registrationMessage) { %>style="display: none;"<% } %>>
-                <% if (registrationMessage) { %>
+
+                <% if (registrationMessage ) { %>
                     <p><%= registrationMessage %></p>
                 <% } %>
             </div>
