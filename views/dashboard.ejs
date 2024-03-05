@@ -30,12 +30,12 @@
 
     <!-- Flatpickr JS -->
     <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.9/dist/flatpickr.min.js"></script>
+    <!--custom stylesheet-->
+    <link rel="stylesheet" href="/styles/style.css" type="text/css">
 
-
-    <!--navbar template-->
-    <script src="header/navbar.js" defer></script>
-    <my-navbar isloggedin="true"></my-navbar>
-
+   <!--Navbar template and script-->
+   <script type="module" src="header/navbar.js" defer></script>
+   <my-navbar isloggedin="true"></my-navbar>
 
 </head>
 
@@ -46,7 +46,7 @@
  <div class="container mt-5">
     <!-- Content Section -->
     <div class="text-center mb-4">
-        <% if (isloggedin) { %>
+        <% if (isAuth) { %>
             <h1>Welcome <%= firstname %>!</h1>
             <p class="lead my-4" style="font-weight: 600">
                 Let's get started!
@@ -58,36 +58,41 @@
         <% } %>
     </div>
 </div>
-
-
-
-        <!-- Quick Actions Section -->
-        <div class="row mb-4">
-            <div class="col-md-4">
-                <div class="card p-3 text-center">
-                    <i class="fas fa-calendar fa-3x mb-3"></i>
-                    <h4>Record Mood</h4>
-                    <p>Log your mood for today</p>
-                    <a href="/record" class="btn btn-primary">Record Now</a>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card p-3 text-center">
-                    <i class="fas fa-chart-line fa-3x mb-3"></i>
-                    <h4>View Trends</h4>
-                    <p>Analyze trends over time</p>
-                    <a href="/trends" class="btn btn-primary">View Trends</a>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card p-3 text-center">
-                    <i class="fas fa-history fa-3x mb-3"></i>
-                    <h4>History</h4>
-                    <p>View your previous emotion snapshots</p>
-                    <a href="/history" class="btn btn-primary">Go to History</a>
-                </div>
+<!-- Quick Actions Section -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="quick-action-container"> <!-- Add a container div -->
+            <div class="card p-3 text-center quick-action-card"> <!-- Add the custom class here -->
+                <i class="fas fa-calendar fa-3x mb-3"></i>
+                <h4>Record Mood</h4>
+                <p>Log your mood for today</p>
+                <a href="/record" class="btn btn-primary">Record Now</a>
             </div>
         </div>
+    </div>
+    <div class="col-md-4">
+        <div class="quick-action-container"> <!-- Add a container div -->
+            <div class="card p-3 text-center quick-action-card"> <!-- Add the custom class here -->
+                <i class="fas fa-chart-line fa-3x mb-3"></i>
+                <h4>View Trends</h4>
+                <p>Analyze trends over time</p>
+                <a href="/statistics" class="btn btn-primary">View Trends</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="quick-action-container"> <!-- Add a container div -->
+            <div class="card p-3 text-center quick-action-card"> <!-- Add the custom class here -->
+                <i class="fas fa-history fa-3x mb-3"></i>
+                <h4>History</h4>
+                <p>View your previous emotion snapshots</p>
+                <a href="/history" class="btn btn-primary">Go to History</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+
 
         <!-- Features section (Similar to Landing Page) -->
         <section id="Track" class="p-5" style="background-color: rgb(50, 180, 236);">
@@ -114,10 +119,7 @@
     <!-- Bootstrap and Font Awesome JavaScript -->
     <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
 
-    <!-- Use this script block to dynamically set the username -->
-    <script>
-        document.getElementById('username').textContent = 'John'; // Replace with the actual username variable
-    </script>
+ 
 
 </body>
 

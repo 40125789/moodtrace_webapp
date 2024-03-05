@@ -1,0 +1,46 @@
+body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    background:rgb(67, 194, 217);
+}
+
+.form-login {
+    max-width: 400px; /* Adjust the width as needed */
+    width: 50%; /* Set a percentage of the viewport width */
+    padding: 25px;
+    border-radius: 20px;
+    text-align: center;
+    background-color: white;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); /* Optional: Add a subtle box shadow */
+}
+
+.form-login h2,
+.form-login p,
+.form-group {
+    margin-bottom: 15px;
+}
+
+.login-icon {
+    font-size: 2rem;
+    margin-bottom: 15px;
+}
+
+.btn-block {
+    width: 100%;
+}
+
+.brand-link {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    z-index: 1000; /* Set a high z-index to ensure it's on top of other elements */
+}
+
+.brand-link a {
+    color: white;
+    text-decoration: none;
+    font-weight: bold;
+    font-size: 18px; /* Adjust the font size as needed */
+}

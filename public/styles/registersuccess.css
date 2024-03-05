@@ -1,0 +1,67 @@
+body {
+    background-color: #f8f9fa; /* Light gray background color */
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background-color: rgb(67, 194, 217);
+}
+
+.container {
+    text-align: center;
+    background-color: #fff; /* White container background */
+    padding: 40px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Box shadow for container */
+    max-width: 500px;
+    width: 100%;
+    opacity: 0; /* Initially set opacity to 0 */
+    animation: fadeIn 0.5s forwards; /* Apply fade-in animation */
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0; /* Start from opacity 0 */
+    }
+    to {
+        opacity: 1; /* End with opacity 1 */
+    }
+}
+
+
+
+h1, p {
+    color: #333; /* Dark gray color for heading and paragraph */
+    font-weight: bold; /* Make text bold */
+}
+
+h1 {
+    color: #007bff; /* Blue color for heading */
+    margin-bottom: 20px;
+    font-size: 2rem; /* Decrease font size for heading */
+}
+
+h2 {
+    color: #222; /* Dark gray color for heading and paragraph */
+    font-weight: bold; /* Make text bold */
+    font-size: 1.5rem; /* Decrease font size for h2 */
+}
+
+p {
+    margin-top: 20px;
+    font-size: 1rem; /* Decrease font size for paragraphs */
+    margin-bottom: 15px; /* Decrease margin bottom for paragraphs */
+}
+
+.img-fluid {
+    max-width: 100%; /* Adjust image size to fit container */
+    height: auto;
+    margin-bottom: 15px; /* Decrease margin bottom for image */
+}
+
+.btn-login {
+    margin-top: 10px; /* Decrease margin top for login button */
+}

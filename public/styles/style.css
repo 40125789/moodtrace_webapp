@@ -1,0 +1,246 @@
+
+.quick-action-container {
+    padding: 10px;
+}
+
+.quick-action-card {
+    background-color: #36c7dd; /* Blue background color */
+    color: #fff; /* White text color */
+}
+
+.record-mood-img-container {
+    display: flex;
+    justify-content: flex-end;
+    animation: fadeIn 0.5s forwards; /* Apply fade-in animation */
+    
+}
+
+.record-mood-img-container img {
+    width: 100%; /* Adjust the width as needed */
+}
+
+/* Add shadow border and style for calendar button */
+.record-mood-datepicker-container,
+.record-mood-timepicker-container {
+    position: relative;
+}
+
+.record-mood-datepicker-container .form-control,
+.record-mood-timepicker-container .form-control {
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.record-mood-datepicker-container .input-group-addon,
+.record-mood-timepicker-container .input-group-addon {
+    position: ab;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    cursor: pointer;
+}
+
+
+
+      /* Unique namespace or identifier */
+      .mood-log .table-bordered tbody tr:hover td {
+        background-color: #3bc0e8 !important;
+        cursor: pointer;
+    }
+
+    /* Unique namespace or identifier */
+    .mood-log table.table-bordered thead th,
+    .mood-log table.table-bordered tbody td {
+        width: 10%;
+        text-align: center;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .statistics-body {
+        font-family: 'Arial', sans-serif;
+        background-color: #f8f9fa;
+    }
+    
+    .statistics-container {
+        margin-top: 10px;
+        padding: 0 15px; /* Add padding to the container */
+    }
+    
+     /* Add shadow or border to separate each statistics container */
+     .statistics-container > .row {
+        margin-bottom: 20px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); /* Add shadow */
+        border-radius: 10px; /* Add border radius */
+        padding: 20px; /* Add padding */
+    }
+    
+    .statistics-card {
+        margin-bottom: 10px;
+    }
+    
+    .statistics-chart-container {
+        height: 300px;
+        margin-top: 30px;
+    }
+
+    .statistics-card-title {
+        font-size: 24px; /* Set the font size to 24 pixels */
+        font-weight: bold; /* Make the font bold */
+        font-style: normal;
+        padding-bottom: 50px,
+    }
+    
+    .statistics-insights {
+        margin-top: 40px;
+    }
+    
+    .statistics-insights .statistic-item {
+        margin-bottom: 10px;
+    }
+    
+    /* Add color and padding to the statistic items */
+    .statistic-item {
+        margin-bottom: 20px;
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        background-color: #f9f9f9;
+    }
+    
+    /* Add shadow or border to separate the contextual triggers container */
+    #common-triggers-container {
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); /* Add shadow */
+        border-radius: 10px; /* Add border radius */
+        padding: 20px; /* Add padding */
+        background-color: rgb(14, 212, 234); /* Add background color */
+    }
+    
+    /* Adjust the style of the common triggers list */
+    #common-triggers-container ul {
+        padding: 0;
+        margin: 0;
+        list-style: none;
+    }
+    
+    #common-triggers-container ul li {
+        margin-bottom: 5px;
+    }
+    
+    /* Add emojis for each emotion */
+    .emotion-emoji {
+        font-size: 24px;
+        margin-right: 10px;
+    }
+    
+    /* Define colors for emotions */
+    .emotion-anger { color: #FF5733; }
+    .emotion-contempt { color: #4682B4; }
+    .emotion-disgust { color: #FFA500; }
+    .emotion-enjoyment { color: #800080; }
+    .emotion-fear { color: #8B4513; }
+    .emotion-sadness { color: #FFC0CB; }
+    .emotion-surprise { color: #00FFFF; }
+    
+    
+
+     /* Unique identifier: registration */
+     .registration-body {
+        background: rgb(67, 194, 217);
+    }
+
+    .registration-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+    }
+
+    .registration-form {
+        max-width: 400px;
+        background-color: white;
+        padding: 25px;
+        border-radius: 20px;
+        text-align: center;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .registration-form h2 {
+        text-align: center;
+    }
+
+    .registration-form p {
+        text-align: center;
+    }
+
+    .registration-form .user-icon {
+        font-size: 2rem;
+        margin-bottom: 15px;
+    }
+
+    .registration-form .form-group {
+        margin-bottom: 15px;
+    }
+
+    .registration-form .btn-block {
+        width: 100%;
+    }
+
+    .registration-bubble {
+        display: none;
+        padding: 10px;
+        border-radius: 5px;
+        margin-top: 10px;
+      
+      
+    }
+    .registration-message {
+    display: none;
+    padding: 10px;
+    border-radius: 5px;
+    margin-top: 10px;
+    color: red;
+   
+    
+}
+
+/* Define styles for success message */
+.success-message {
+    color: green; /* Change color to green for success messages */
+}
+
+/* Define styles for error message */
+.error-message {
+    color: red; /* Change color to red for error messages */
+}
+
+    
+    .error-bubble {
+        display: none;
+        padding: 10px;
+        border-radius: 5px;
+        margin-top: 10px;
+        color: red;
+       
+        
+    }
+    
+    
+    
+    .registration-brand-link {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        z-index: 1000;
+    }
+
+    .registration-brand-link a {
+        color: white;
+        text-decoration: none;
+        font-weight: bold;
+        font-size: 18px;
+    }
+
+
+
+    

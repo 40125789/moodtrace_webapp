@@ -6,7 +6,7 @@ class MyNavBar extends HTMLElement {
         this.innerHTML = `
             <nav class="navbar navbar-expand-lg bg-info navbar-dark">
                 <div class="container">
-                    <a href="/" class="navbar-brand" style="font-weight: bold">Mood Trace</a>
+                    <a href="/dashboard" class="navbar-brand" style="font-weight: bold">Mood Trace</a>
                     <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navmenu">
                         <span class="navbar-toggler-icon"></span>
                     </button>

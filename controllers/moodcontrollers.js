@@ -1,35 +1,71 @@
-const conn = require('./../utils/dbconn');
 const bcrypt = require('bcrypt');
+const axios = require('axios');
+require('dotenv').config();
+const apiKey = process.env.API_KEY; 
 
-exports.requireLogin = (req, res, next) => {
-    const { isloggedin } = req.session;
-
-    if (isloggedin) {
-        // If the user is logged in, proceed to the next middleware or route handler
-        next();
+// Middleware function to check if the user is authenticated
+const isAuth = (req, res, next) => {
+    if (req.session.isAuth) {
+        next(); // User is authenticated, continue to the next middleware or route handler
     } else {
-        // If the user is not logged in, redirect to the login page
-        res.redirect('/login');
+        res.redirect('/login'); // User is not authenticated, redirect to the login page
     }
 };
 
-// POST method to insert a new mood snapshot record
+exports.getAPIkey = (req, res) => {
+    axios.get('http://localhost:3002/api/apiKey') // Adjust the URL to match your server
+        .then(response => {
+            const retrievedApiKey = response.data.apiKey;
+            // Use the retrieved API key in your server-side code
+            console.log('Retrieved API Key:', retrievedApiKey);
 
-exports.getContextualTriggers = (req, res) => {
-    const selectTriggersSQL = 'SELECT trigger_name FROM contextual_trigger';
+            // Create headers object with the API key
+            const headers = {
+                'x-api-key': retrievedApiKey
+            };
 
-    conn.query(selectTriggersSQL, (err, rows) => {
-        if (err) {
-            console.error('Error fetching triggers:', err);
-            res.status(500).json({ error: 'Internal Server Error' });
-        } else {
-            const contextualTriggers = rows.map(row => row.trigger_name);
-            res.json(contextualTriggers);
-        }
-    });
+            // Send the retrieved API key as JSON response along with headers to the client
+            res.json({ apiKey: retrievedApiKey, headers });
+        })
+        .catch(error => {
+            console.error('Error retrieving API key:', error);
+            res.status(500).json({ error: 'Failed to retrieve API key' }); // Handle error and send error response
+        });
 };
 
-exports.postNewSnapshot = (req, res) => {
+
+
+// POST method to insert a new mood snapshot record
+
+
+exports.getContextualTriggers = async (req, res) => {
+    try {
+        const endpoint = 'http://localhost:3002/getcontextualtriggers'; // Adjust the endpoint URL as needed
+        const response = await axios.get(endpoint);
+
+        // Check if the response status indicates success (2xx)
+        if (response.status >= 200 && response.status < 300) {
+            // Check if the response data is an array
+            if (Array.isArray(response.data)) {
+                const contextualTriggers = response.data;
+                res.json(contextualTriggers);
+            } else {
+                throw new Error('Unexpected response format: response data is not an array');
+            }
+        } else {
+            throw new Error(`Request failed with status ${response.status}`);
+        }
+    } catch (error) {
+        console.error('Error fetching contextual triggers:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+};
+
+
+
+// Handle insertion of a new snapshot using Axios
+exports.postNewSnapshot = async (req, res) => {
+    try {
     const {
         enjoymentLevel,
         sadnessLevel,
@@ -42,88 +78,55 @@ exports.postNewSnapshot = (req, res) => {
         selectedContextualTriggers
     } = req.body;
 
+    // Initialize selectedContextualTriggers as an empty array if not provided
+    const triggers = selectedContextualTriggers || [];
+
     const { userid } = req.session; // Assuming user_id is stored in the session
-    const insertSnapshotSQL = 'INSERT INTO snapshot (enjoyment_level, sadness_level, anger_level, contempt_level, disgust_level, fear_level, surprise_level, date_time, user_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)';
-    const insertSnapshotTriggerSQL = 'INSERT INTO snapshot_trigger (snapshot_id, trigger_id) VALUES (?, ?)';
+    const endpoint = `http://localhost:3002/postSnapshot/${userid}`; // Replace with your actual endpoint URL
 
-    const snapshotValues = [enjoymentLevel, sadnessLevel, angerLevel, contemptLevel, disgustLevel, fearLevel, surpriseLevel, datetimePicker, userid];
+    const snapshotValues = {
+        enjoymentLevel,
+        sadnessLevel,
+        angerLevel,
+        contemptLevel,
+        disgustLevel,
+        fearLevel,
+        surpriseLevel,
+        datetimePicker,
+        userid,
+        selectedContextualTriggers: triggers // Send selectedContextualTriggers (either provided or empty array) to the server
+    };
 
-    let responseSent = false; // Flag to track if a response has been sent
+    console.log('Sending snapshot data to server:', snapshotValues);
+    const response =  await axios.post(endpoint, snapshotValues, {
+        method: 'POST',
+                headers: {
+                    'x-api-key': apiKey
 
-    conn.query(insertSnapshotSQL, snapshotValues, (err, result) => {
-        if (err) {
-            console.error('Error inserting snapshot:', err);
-            sendErrorRedirect('/error');
-        } else {
-            const snapshotId = result.insertId;
 
-            // Convert to an array if not already
-            const triggersToInsert = Array.isArray(selectedContextualTriggers) ? selectedContextualTriggers : [selectedContextualTriggers];
-
-            // Insert triggers association with the snapshot
-            const insertTriggers = (triggers, callback) => {
-                if (triggers.length === 0) {
-                    callback(); // Call the callback when all triggers are processed
-                } else {
-                    const triggerName = triggers.shift();
-
-                    // Retrieve the trigger id from the contextual_trigger table
-                    const getTriggerIdSQL = 'SELECT trigger_id FROM contextual_trigger WHERE trigger_name = ?';
-
-                    conn.query(getTriggerIdSQL, [triggerName], (err, rows) => {
-                        if (err) {
-                            console.error('Error getting trigger id:', err);
-                            sendErrorRedirect('/error');
-                            callback(); // Ensure callback is called in case of an error
-                        } else {
-                            if (rows.length === 0) {
-                                console.error('Trigger not found:', triggerName);
-                                // Continue without failing the insertion
-                                insertTriggers(triggers, callback);
-                            } else {
-                                const triggerId = rows[0].trigger_id;
-                                conn.query(insertSnapshotTriggerSQL, [snapshotId, triggerId], (err) => {
-                                    if (err) {
-                                        console.error('Error inserting snapshot trigger:', err);
-                                        sendErrorRedirect('/error');
-                                        callback(); // Ensure callback is called in case of an error
-                                    } else {
-                                        insertTriggers(triggers, callback); // Continue processing triggers
-                                    }
-                                });
-                            }
-                        }
-                    });
-                }
-            };
-
-            insertTriggers(triggersToInsert, () => {
-                // No need to wait for triggers processing completion to redirect
-                sendSuccessRedirect();
-            });
         }
     });
+   
+        console.log('Response from server:', response.data);
+        if (response.status === 200 && response.status < 300) {
+            console.log('Snapshot data added successfully');
+            res.redirect('/history');
 
-    // Function to handle errors and redirect
-    function sendErrorRedirect(redirectUrl) {
-        if (!responseSent) {
-            responseSent = true;
-            res.redirect(redirectUrl);
+            
+        } else {
+            // Handle unexpected response
+            console.error('Unexpected response from server');
+            res.status(500).send('Unexpected response from server')
+    
         }
+    } catch (error)  {
+        console.error('Error inserting snapshot:', error);
+        res.status(500).json({ error: 'Error inserting snapshot' }); // Send an error response
     }
-
-    // Function to handle success and redirect
-    function sendSuccessRedirect(redirectUrl = '/history') {
-        if (!responseSent) {
-            responseSent = true;
-            res.redirect(redirectUrl);
-        }
-    }
+    
 };
 
 
-
-    
 // Serve the registration page
 exports.getRegister = (req, res) => {
     // Initialize registrationMessage as an empty string
@@ -133,180 +136,112 @@ exports.getRegister = (req, res) => {
 
     
 };
-  
-// Handle registration form submission
-exports.postRegister = (req, res) => {
-    const { firstname, lastname, email, password, confirmpassword } = req.body;
 
-    let registrationMessage = '';
+exports.getDashboard = async (req, res) => {
+    try {
+        const { userid } = req.session;
+        console.log(`User data from session: ${userid}`);
 
-    // Validate form data (you should perform more thorough validation)
-    if (!firstname || !lastname || !email || !password || !confirmpassword) {
-        registrationMessage = 'Invalid form data. Please check your input.';
-        return res.status(400).render('register', { registrationMessage });
-    }
+        const getuserURL = `http://localhost:3002/dashboard/${userid}`;
 
-    // Check if the password meets length requirement
-    if (password.length < 8) {
-        registrationMessage = 'Password must be at least 8 characters long.';
-        return res.status(400).render('register', { registrationMessage });
-    }
+        const response = await axios.get(getuserURL, {
+                method: 'GET',
+                headers: {
+                    'x-api-key': apiKey
 
-    // Check if the email has already been registered
-    const emailCheckQuery = 'SELECT * FROM user WHERE email_address = ?';
-    conn.query(emailCheckQuery, [email], (err, emailResults) => {
-        if (err) {
-            console.error('Error checking email in MySQL: ' + err.stack);
-            registrationMessage = '';
-            return res.status(500).render('register', { registrationMessage });
+
         }
-
-        if (emailResults.length > 0) {
-            registrationMessage = 'Email address is already registered. Please choose another email.';
-            return res.status(400).render('register', { registrationMessage });
-        }
-
-        // Hash the password using bcrypt
-        bcrypt.hash(password, 10, (hashErr, hashedPassword) => {
-            if (hashErr) {
-                console.error('Error hashing password: ' + hashErr);
-                registrationMessage = '';
-                return res.status(500).render('register', { registrationMessage });
-            }
-
-            // Insert user data into MySQL with hashed password
-            const insertQuery = 'INSERT INTO user (firstname, surname, email_address, password) VALUES (?, ?, ?, ?)';
-            conn.query(insertQuery, [firstname, lastname, email, hashedPassword], (insertErr, result) => {
-                if (insertErr) {
-                    console.error('Error inserting into MySQL: ' + insertErr.stack);
-                    registrationMessage = '';
-                    return res.status(500).render('register', { registrationMessage });
-                }
-
-                console.log('User registered with ID: ' + result.insertId);
-
-                // Send a registration success message
-                registrationMessage = 'Registration successful. Welcome, ' + firstname + '!';
-
-                // Pass registrationMessage to the template
-                res.render('register', { registrationMessage });
-            });
-        });
     });
-};
+        const username = response.data.firstname;
 
+        // Update session data with the retrieved username and isAuth flag
+        req.session.firstname = username;
+        req.session.isAuth = true;
 
-  
-// Routes for each page
-exports.getDashboard = (req, res) => {
-    var userinfo = {};
-    const { isloggedin, userid } = req.session;
-    console.log(`User data from session: ${isloggedin}, ${userid}`);
-
-    if (isloggedin) {
-        const getuserSQL = `SELECT user.firstname FROM user WHERE user.user_id = '${userid}'`;
-
-        conn.query(getuserSQL, (err, rows) => {
-            if (err) {
-                throw err;
-            } else {
-                console.log(rows);
-                const username = rows[0].firstname;
-
-                const session = req.session;
-                session.firstname = username;
-
-
-                userinfo = { firstname: username };
-
-                // Assuming your user object has a 'firstname' property
-                res.render('dashboard', { isloggedin, firstname: userinfo.firstname });
-            }
-        });
-    } else {
-        res.redirect('/login'); // Redirect to login if the user is not logged in
+        res.render('dashboard', { isAuth: true, firstname: username });
+    } catch (error) {
+        console.error('Error:', error);
+        res.status(500).send('Internal Server Error');
     }
 };
-
 
 
 exports.getRecord = (req, res) => {
-    var userinfo = {};
-    const { isloggedin, userid } = req.session;
-    console.log(`User logged in: ${isloggedin},${userid} `);
+    const { userid } = req.session;
+    console.log(`User logged in: ${userid} `);
 
-    if (isloggedin) {
-        const getuserSQL = `SELECT user.firstname FROM user WHERE user.user_id = '${userid}'`;
+        const endpoint = `http://localhost:3002/record/${userid}`; 
 
-        conn.query(getuserSQL, (err, rows) => {
-            if (err) {
-                throw err;
-            } else {
-                console.log(rows);
-                const username = rows[0].firstname;
-                const email = rows[0].email_address;
+        axios
+        .get(endpoint,  {
+            method: 'GET',
+            headers: {
+        'x-api-key': apiKey
+    }
+})
+            .then(response => {
+                const userData = response.data;
+                const { firstname, email_address } = userData;
 
                 const session = req.session;
-                session.firstname = username;
-                session.email_address = email;
+                session.firstname = firstname;
+                session.email_address = email_address;
 
-                userinfo = { loggedin: isloggedin, firstname: username, email_address: email };
+                const userinfo = {firstname, email_address };
 
                 // Assuming your user object has a 'firstname' property
-                res.render('record', { isloggedin, firstname: userinfo.firstname });
-            }
-        });
-    } else {
-        res.redirect('/login'); // Redirect to login if the user is not logged in
+                res.render('record', { firstname: userinfo.firstname });
+            })
+            .catch(error => {
+                console.log('Error making API request: ${error}');
+                res.status(500).send('Internal Server Error');
+            });
+   
     }
-};
+
 
 exports.getHistory = (req, res) => {
-    const { isloggedin, userid } = req.session;
-    console.log(`User data from session: ${isloggedin}, ${userid}`);
+    const { userid } = req.session;
+    console.log(`User data from session: ${userid}`);
 
-    if (isloggedin) {
-        const selectSQL = `
-            SELECT 
-                snapshot.*, 
-                user.*, 
-                GROUP_CONCAT(contextual_trigger.trigger_name) AS contextual_triggers
-            FROM 
-                snapshot 
-            INNER JOIN 
-                user ON snapshot.user_id = user.user_id
-            LEFT JOIN 
-                snapshot_trigger ON snapshot.snapshot_id = snapshot_trigger.snapshot_id
-            LEFT JOIN 
-                contextual_trigger ON snapshot_trigger.trigger_id = contextual_trigger.trigger_id
-            WHERE 
-                snapshot.user_id = ?
-            GROUP BY 
-                snapshot.snapshot_id
-            ORDER BY 
-                snapshot.date_time DESC`;
+    
+        const endpoint = `http://localhost:3002/history/${userid}`;
 
-        conn.query(selectSQL, [userid], (err, rows) => {
-            if (err) {
-                console.error('Error fetching mood records:', err);
-                // Redirect to '/record' or another appropriate page in case of an error
-                return res.redirect('/record');
-            }
-
-            // Render the history page with the retrieved moods
-            res.render('history', { moods: rows, isloggedin, user_id: userid });
-        });
-    } else {
-        // Redirect to '/login' or another appropriate page if the user is not logged in
-        res.redirect('/login');
+        axios.get(endpoint, {
+            method: 'GET',
+            headers: {
+        'x-api-key': apiKey
     }
+})
+        
+            .then((response) => {
+                const data = response.data.result;
+                console.log(data); // Log the response data to inspect its structure
+
+                // Check if response data is an array
+                if (Array.isArray(data)) {
+                    // Render the history page with the retrieved moods
+                    res.render('history', { moods: data, user_id: userid });
+                } else {
+                    // Handle case where response data is not an array
+                    console.error("Invalid response format. Expected an array.");
+                    res.redirect('/record');
+                }
+            })
+            .catch((error) => {
+                console.error('Error fetching mood records:', error);
+                // Redirect to '/record' or another appropriate page in case of an error
+                res.redirect('/record');
+            });
+
+    
 };
 
 
 exports.getStatistics = (req, res) => {
-    const { isloggedin, userid } = req.session;
-    console.log(`User data from session: ${isloggedin}, ${userid}`);
-    res.render('statistics', { isloggedin});
+    const { userid } = req.session;
+    console.log(`User data from session: ${userid}`);
+    res.render('statistics', {userid});
 };
 
 
@@ -325,346 +260,302 @@ exports.getLogin = (req, res) => {
 
 };
 
-
 exports.postLogin = (req, res) => {
     const { email, password } = req.body;
-    const checkuserSQL = 'SELECT user_id, password FROM user WHERE email_address = ?';
-    const vals = [email];
+    const endpoint = 'http://localhost:3002/login'; 
 
-    conn.query(checkuserSQL, vals, (err, rows) => {
-        if (err) {
-            console.error('Error checking user:', err);
-            res.redirect('/login');
-        } else {
-            const numrows = rows.length;
+    axios.post(endpoint, { email, password })
+        .then((response) => {
+            console.log('Response data:', response.data); // Log the response data
 
-            if (numrows > 0) {
-                const hashedPassword = String(rows[0].password);
-
-                // Convert the entered password to string if not already
-                const enteredPasswordString = String(password);
-
-                // Compare the entered password with the hashed password
-                bcrypt.compare(enteredPasswordString, hashedPassword, (compareErr, result) => {
-                    if (compareErr) {
-                        console.error('Error comparing passwords:', compareErr);
-                        res.redirect('/login');
-                    } else if (result) {
-                        // Passwords match, set session and redirect to dashboard
-                        const session = req.session;
-                        session.isloggedin = true;
-                        session.userid = rows[0].user_id;
-                        res.redirect('dashboard');
-                    } else {
-                        // Set an error message and render the login page again
-                        res.render('login', { error: 'Invalid email or password' });
-                    }
-                });
-            } else {
-                // Set an error message and render the login page again
-                res.render('login', { error: 'Invalid email or password' });
-            }
-        }
-    });
-};
-
-// Assuming you have a route similar to this in your Express application
-exports.getSelectedMood = (req, res) => {
-    const moodId = req.query.moodId || ''; // Corrected from 'snapshotId' to 'moodId'
-    const trigger = req.query.trigger || '';
-
-    const selectSQL = `
-    SELECT 
-        snapshot.*, 
-        user.*, 
-        GROUP_CONCAT(contextual_trigger.trigger_name) AS contextual_triggers
-    FROM 
-        snapshot 
-    INNER JOIN 
-        user ON snapshot.user_id = user.user_id
-    LEFT JOIN 
-        snapshot_trigger ON snapshot.snapshot_id = snapshot_trigger.snapshot_id
-    LEFT JOIN 
-        contextual_trigger ON snapshot_trigger.trigger_id = contextual_trigger.trigger_id
-    WHERE 
-        snapshot.snapshot_id = ?
-    GROUP BY 
-        snapshot.snapshot_id, user.user_id;`;
-
-
-    fetchContextualTriggers((err, contextualTriggers) => {
-        if (err) {
-            console.error('Error fetching contextual triggers:', err);
-            res.redirect('/history');
-            return;
-        }
-
-        conn.query(selectSQL, [moodId, trigger], (queryErr, rows) => {
-            if (queryErr) {
-                console.error('Error fetching selected card information:', queryErr);
-                res.redirect('/history');
-                return;
-            }
-
-            const selectedCardInfo = rows[0] || {};
-            console.log('moodId:', moodId);
-            console.log('trigger:', trigger);
-            console.log('Selected Card Info:', selectedCardInfo);
-
-            
-
-            res.render('editdeletetrigger', { moodId, trigger, selectedCardInfo, contextualTriggers });
-        });
-    });
-};
-
-// Function to fetch contextual triggers from the database
-function fetchContextualTriggers(callback) {
-   const query = 'SELECT trigger_name, trigger_id FROM contextual_trigger';
-
-   conn.query(query, (err, rows) => {
-       if (err) {
-            callback(err, null);
-            return;
-      }
-
-      const triggersArray = rows.map(row => row.trigger_name);
-      callback(null, triggersArray);
-   });
-};
-
-
-
-
-exports.updateMood = (req, res) => {
-    const { updatedContextualTriggers, moodId } = req.body;// Assuming moodId is now in the request body
-
-    // Convert updatedContextualTriggers to an array if it's a single value
-    const triggersArray = Array.isArray(updatedContextualTriggers)
-        ? updatedContextualTriggers
-        : [updatedContextualTriggers];
-
-    // Update triggers associated with the given snapshotID
-    const updateTriggerSQL = `
-    INSERT IGNORE INTO snapshot_trigger (snapshot_id, trigger_id)
-    SELECT '${moodId}', trigger_id
-    FROM contextual_trigger
-    WHERE trigger_name IN (?) AND trigger_id NOT IN (
-        SELECT trigger_id
-        FROM snapshot_trigger
-        WHERE snapshot_id = '${moodId}'
-    );
-`;
-
- 
-
-// delete triggers from the if the checkbox is deselected by the user
-const deleteTriggersSQL = `
-            DELETE FROM snapshot_trigger
-            WHERE snapshot_id = '${moodId}' AND trigger_id NOT IN (
-                SELECT trigger_id FROM contextual_trigger WHERE trigger_name IN (?)
-            );
-        `;
-
-        conn.query(deleteTriggersSQL, [triggersArray], (deleteErr) => {
-            if (deleteErr) {
-                console.error('Error deleting triggers:', deleteErr);
-                conn.rollback(() => {
-                    res.redirect('/error');
-                });
-                return;
-            }
-        });
-
-    // Execute each update statement for each trigger in parallel using Promise.all
-    const updatePromises = triggersArray.map((newTrigger) => {
-        return new Promise((resolve, reject) => {
-            // Use transaction for atomicity
-            conn.beginTransaction((beginTransactionErr) => {
-                if (beginTransactionErr) {
-                    reject(beginTransactionErr);
-                    return;
+            if (response.data && response.data.success) {
+                if (req.session.isloggedin) {
+                    return res.redirect('/dashboard');
+                } else {
+                    req.session.isloggedin = true;
+                    req.session.userid = response.data.userid;
+                    return res.redirect('/dashboard');
                 }
-
-                // Execute the update statement
-                conn.query(updateTriggerSQL, [newTrigger, moodId, newTrigger], (updateErr, updateResult) => {
-                    if (updateErr) {
-                        // Rollback the transaction if there's an error
-                        conn.rollback(() => {
-                            console.error('Error updating snapshot_trigger:', updateErr);
-                            reject(updateErr);
-                        });
-                    } else {
-                        // Commit the transaction if the update is successful
-                        conn.commit((commitErr) => {
-                            if (commitErr) {
-                                console.error('Error committing transaction:', commitErr);
-                                reject(commitErr);
-                            } else {
-                                resolve(updateResult);
-                                console.log('newTrigger:', newTrigger);
-                                console.log('moodId:', moodId);
-                            }
-                        });
-                    }
-                });
-            });
-        });
-    });
-
-    // Wait for all updates to complete
-    Promise.all(updatePromises)
-        .then(() => {
-            res.redirect('/history'); // Redirect to the mood history page after successful update
+            } else {
+                // Handle unsuccessful login
+                let errMessage = 'An error occurred while logging in';
+                if (response.data && response.data.error) {
+                    errMessage = response.data.error;
+                }
+                return res.render('login', { errMessage });
+            }
         })
         .catch((error) => {
-            console.error('Error updating triggers:', error);
-            res.redirect('/error'); // Redirect to the error page in case of an error
-        
-
+            console.error('Error logging in:', error);
+            let errMessage = 'Internal Server Error';
+            if (error.response && error.response.data && error.response.data.errMessage) {
+                errMessage = error.response.data.errMessage;
+            }
+            return res.render('login', { errMessage });
         });
 };
 
-exports.deleteMood = (req, res) => {
-    const moodId = req.params.moodId;
-    const selectTriggersSQL = 'SELECT trigger_id FROM snapshot_trigger WHERE snapshot_id = ?';
-    const deleteTriggerSQL = 'DELETE FROM snapshot_trigger WHERE trigger_id IN (?)';
-    const deleteSnapshotSQL = 'DELETE FROM snapshot WHERE snapshot_id = ?';
-    
-    // Begin a transaction
-    conn.beginTransaction((err) => {
-        if (err) {
-            console.error('Error beginning transaction:', err);
-            return res.status(500).send('Internal Server Error');
+
+
+exports.postRegister = async (req, res) => {
+    const { firstname, lastname, email, password, confirmpassword } = req.body;
+
+    try {
+        // Make a request to the endpoint that handles registration using Axios
+        const response = await axios.post('http://localhost:3002/register', { firstname, lastname, email, password, confirmpassword });
+
+        // Handle the response from the API route
+        const registrationMessage = response.data.registrationMessage;
+        console.log(registrationMessage)
+
+        // Check if the response status is 201 (Created)
+        if (response.status === 201) {
+            // Log the registration message to the console
+            console.log('Registration successful:', registrationMessage);
+
+            // Render the registration message
+            res.render('register', { registrationMessage }, () => {
+                // Redirect to the success page after rendering the message
+                setTimeout(() => {
+                    res.redirect('/registersuccess');
+                }, 2000); // Delay of 2000 milliseconds (2 seconds)
+            });
+            
+            return; // Exit the function to avoid sending multiple responses
+            
         }
+
+       
+    } catch (error) {
+        // Handle specific errors from the server
+        console.error('Error during registration:', error.response.data);
+        const registrationMessage = error.response.data.registrationMessage || 'registration error';
+        res.render('register', { registrationMessage });
+        return;
+    }
     
-        // Retrieve all associated trigger IDs
-        conn.query(selectTriggersSQL, [moodId], (errSelect, triggerRows) => {
-            if (errSelect) {
-                return rollbackAndSendError(res, conn, 'Error retrieving associated triggers:', errSelect);
-            }
-    
-            const triggerIds = triggerRows.map(row => row.trigger_id);
-    
-            // If there are associated triggers, delete them first
-            if (triggerIds.length > 0) {
-                conn.query(deleteTriggerSQL, [triggerIds], (errDelete, resultDelete) => {
-                    if (errDelete) {
-                        return rollbackAndSendError(res, conn, 'Error deleting associated triggers:', errDelete);
-                    }
-    
-                    // Then delete the snapshot
-                    conn.query(deleteSnapshotSQL, [moodId], (errSnapshot, resultSnapshot) => {
-                        if (errSnapshot) {
-                            return rollbackAndSendError(res, conn, 'Error deleting snapshot:', errSnapshot);
-                        }
-    
-                        // Commit the transaction if all delete queries are successful
-                        conn.commit((errCommit) => {
-                            if (errCommit) {
-                                return rollbackAndSendError(res, conn, 'Error committing transaction:', errCommit);
-                            }
-    
-                            console.log(`Deleted mood with ID ${moodId} successfully.`);
-                            res.redirect('/history'); // Redirect to the mood history page after deletion
-                        });
-                    });
-                });
-            } else {
-                // If there are no associated triggers, directly delete the snapshot
-                conn.query(deleteSnapshotSQL, [moodId], (errSnapshot, resultSnapshot) => {
-                    if (errSnapshot) {
-                        return rollbackAndSendError(res, conn, 'Error deleting snapshot:', errSnapshot);
-                    }
-    
-                    // Commit the transaction if the delete query is successful
-                    conn.commit((errCommit) => {
-                        if (errCommit) {
-                            return rollbackAndSendError(res, conn, 'Error committing transaction:', errCommit);
-                        }
-    
-                        console.log(`Deleted mood with ID ${moodId} successfully.`);
-                        res.redirect('/history'); // Redirect to the mood history page after deletion
-                    });
-                });
-            }
-        });
-    });
 };
 
-function rollbackAndSendError(res, conn, message, err) {
-    console.error(message, err);
-    conn.rollback((rollbackErr) => {
-        if (rollbackErr) {
-            console.error('Error rolling back transaction:', rollbackErr);
+
+async function fetchSelectedMood(moodId, trigger) {
+    try {
+        const endpoint = `http://localhost:3002/selectedMood/${moodId}/${trigger}`;
+        console.log('Fetching data from:', endpoint);
+        const response = await axios.get(endpoint, {
+            method: 'GET',
+            headers: {
+                'x-api-key': apiKey
+            }
+        });
+        console.log('Response:', response.data); // Log the response data
+        return response.data.selectedCardInfo || null; // Return the response data including contextual triggers
+    } catch (error) {
+        console.error('Error fetching selected mood information:', error.message);
+        throw new Error('Error fetching selected mood information');
+    }
+}
+
+// Function to fetch contextual triggers
+async function fetchContextualTriggers() {
+    try {
+        const endpoint = 'http://localhost:3002/getcontextualtriggers'; // Adjust the endpoint URL as needed
+        const response = await axios.get(endpoint);
+        return response.data; // Return contextual triggers
+    } catch (error) {
+        console.error('Error fetching contextual triggers:', error.message);
+        throw new Error('Error fetching contextual triggers');
+    }
+}
+
+// Usage of the function in your route handler
+exports.getSelectedMood = async (req, res) => {
+    
+    try {
+        const moodId = req.query.moodId || ''; // Extract moodId from query string
+        const trigger = req.query.trigger || ''; // Extract trigger from query string
+
+        // Call the functions to fetch selected mood information and contextual triggers concurrently
+        const [selectedCardInfo, contextualTriggers] = await Promise.all([
+            fetchSelectedMood(moodId, trigger),
+            fetchContextualTriggers()
+        ]);
+
+        // Ensure selectedCardInfo is not empty or undefined
+        if (!selectedCardInfo) {
+            console.error('No selected card information found');
+            return res.status(404).json({ error: 'Selected card information not found' });
         }
-        res.status(500).send('Internal Server Error');
+
+        // Render the view with the obtained data
+        res.render('editdeletetrigger', { selectedCardInfo, contextualTriggers, trigger, moodId });
+    } catch (error) {
+        console.error('Error:', error.message);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+};
+
+
+
+exports.updateMood = async (req, res) => {
+    try {
+        // Extract moodId from query parameters
+        const moodId = req.query.moodId;
+
+        // Extract updatedContextualTriggers from request body
+        const { updatedContextualTriggers } = req.body;
+
+        // Ensure moodId and updatedContextualTriggers are properly received
+        console.log('Received moodId:', moodId);
+        console.log('Received updatedContextualTriggers:', updatedContextualTriggers);
+
+        // Construct endpoint with moodId
+        const endpoint = `http://localhost:3002/updateTriggers/${moodId}`;
+
+        // Ensure Axios is properly configured and imported
+        console.log('Sending request to endpoint:', endpoint);
+
+        // Send triggers data to the single endpoint for updating
+        const response = await axios.put(endpoint, {
+            updatedContextualTriggers
+        });
+
+        // Ensure response is received
+        console.log('Received response:', response.data.result);
+
+        // Check if the request was successful (status code 2xx)
+        if (response.status >= 200 && response.status < 300) {
+            // Redirect to history page upon success
+            res.redirect('/history');
+        } else {
+            // If the request was not successful, handle the error
+            console.error('Error updating triggers. Server responded with status:', response.status);
+            res.redirect('/error');
+        }
+    } catch (error) {
+        // If there was an error in making the request, handle it
+        console.error('Error updating triggers:', error);
+        res.redirect('/error');
+    }
+};
+
+
+// Define a function to rollback the transaction and send an error response
+function rollbackAndSendError(res, conn, errorMessage, error) {
+    console.error(errorMessage, error);
+    conn.rollback(() => {
+        console.error('Transaction rolled back.');
+        res.status(500).json({ error: 'Internal Server Error' });
     });
 }
 
 
+exports.deleteMood = async (req, res) => {
+    const moodId = req.params.moodId;
+    const endpoint = `http://localhost:3002/deleteSnapshot/${moodId}`;
 
-//Getting emotional values for emotions chart
-exports.getemotionalValues = (req, res) => {
-    const { isloggedin, userid } = req.session;
-    console.log(`User data from session: ${isloggedin}, ${userid}`);
+    try {
+        // Make a single request to the backend server to delete mood and associated triggers
+        const response = await axios.delete(endpoint, { moodId });
 
-    if (!isloggedin) {
-        // Redirect to '/login' or another appropriate page if the user is not logged in
-        return res.status(403).json({ error: 'User not logged in' });
+        console.log(`Deleted mood with ID ${moodId} successfully.`);
+        res.status(200).json(response.data.result);
+    } catch (error) {
+        console.error('Error:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
     }
-
-    
-    const selectSQL = `
-    SELECT 
-        snapshot.*,
-        user.*, 
-        GROUP_CONCAT(contextual_trigger.trigger_name) AS contextual_triggers
-    FROM 
-        snapshot 
-    INNER JOIN 
-        user ON snapshot.user_id = user.user_id
-    LEFT JOIN 
-        snapshot_trigger ON snapshot.snapshot_id = snapshot_trigger.snapshot_id
-    LEFT JOIN 
-        contextual_trigger ON snapshot_trigger.trigger_id = contextual_trigger.trigger_id
-    WHERE 
-        snapshot.user_id = ?
-    GROUP BY 
-        snapshot.snapshot_id
-    ORDER BY 
-        snapshot.date_time DESC`;
-
-
-    conn.query(selectSQL, [userid], (err, rows) => {
-        if (err) {
-            console.error('Error fetching emotional values:', err);
-            return res.status(500).json({ error: 'Internal Server Error' });
-        }
-
-        const data = rows.map(row => {
-            const emotions = ['enjoyment', 'sadness', 'anger', 'contempt', 'disgust', 'fear', 'surprise'];
-        
-            const emotionData = emotions.reduce((acc, emotion) => {
-                acc[emotion] = row[`${emotion}_level`];
-                return acc;
-            }, {});
-        
-            return {
-                date_time: row.date_time, // Include the date_time property
-                ...emotionData,
-                contextual_triggers: row.contextual_triggers || null,
-            };
-        });
-        
-        
-        res.json(data);
-    }); 
 };
 
 
+exports.getemotionalValues = async (req, res) => {
+    try {
+        const { userid } = req.session;
+        console.log(`User data from session:${userid}`);
+
+        if ( userid) {
+            const endpoint = `http://localhost:3002/getemotionalvalues/${userid}`;
+            const response = await axios.get(endpoint, {
+                method: 'GET',
+                    headers: {
+                        'x-api-key': apiKey
+
+                     
+                    }
+                });
+           
+            const data = response.data;
+
+            if (Array.isArray(data)) {
+                // Return emotional values as JSON response
+                res.json(data);
+            } else {
+                console.error("Invalid response format. Expected an array.");
+                res.status(500).json({ error: "Invalid response format. Expected an array." });
+            }
+        } else {
+            res.status(401).json({ error: "User not logged in or userid not defined." });
+        }
+    } catch (error) {
+        console.error('Error fetching data:', error);
+        res.status(500).json({ error: "Internal Server Error" });
+    }
+};
+
+
+
+exports.getRegisterSuccess  = (req, res) => {
+console.log(`User successfully registered`);
+
+    res.render('registersuccess');
+
+};
+
+exports.getforgetpassword = (req, res) => {
+    const message = ""; // You may want to change this to an appropriate initial value
+    const sentResetLink = false; // Set the initial value of sentResetLink
+    res.render('forgetpassword', { message, sentResetLink }); // Pass both message and sentResetLink to the template
+};
+
+
+exports.postForgetPassword = async (req, res) => {
+    const { email } = req.body;
+
+    try {
+        // Make a request to the endpoint that checks if the email exists
+        const response = await axios.post('http://localhost:3002/forgetpassword', { email });
+
+        // Extract the message from the response data
+        const message = response.data.message;
+
+        // Determine the value of sentResetLink based on the response
+        const sentResetLink = message === "Password reset link has been sent to your email";
+
+        // Render the forget password page with the message and sentResetLink
+        res.render('forgetpassword', { message: message, sentResetLink: sentResetLink });
+    } catch (error) {
+        console.error('Error:', error);
+        if (error.response && error.response.status === 404) {
+            // If the email is not found, render the forget password page with an appropriate message
+            res.render('forgetpassword', { message: 'Email not found', sentResetLink: false });
+        } else {
+            // Handle other errors appropriately
+            res.status(500).send('Internal Server Error');
+        }
+    }
+};
+
+
+
+
+
+
 exports.getLogout = (req, res) => {
-    req.session.destroy(() => {
+    req.session.destroy(err => {
+        if (err) {
+            console.error('Error destroying session:', err);
+            return res.status(500).send('Internal Server Error');
+        }
+
+        
         res.redirect('/login'); 
     });
 };

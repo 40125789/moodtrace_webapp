@@ -8,11 +8,9 @@ const bodyParser = require('body-parser');
 
 // Import your contextual triggers route
 const contextualTriggersRoute = require('./routes/moodroutes'); // Adjust the path accordingly
-//const PORT = 3000;
+
 
 const app = express();
-
-
 
 app.use(morgan('tiny'));
 app.use(express.static(path.join(__dirname, 'public')));

@@ -4,106 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Registration-Mood Trace</title>
-
     <!-- Bootstrap CSS -->
-    <link href="https://getbootstrap.com/docs/5.3/dist/css/bootstrap.min.css" rel="stylesheet"
-        integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
-        <link rel="stylesheet" href="/styles/style.css" type="text/css">
-
-
-    <!-- Bootstrap JS and Popper.js -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.min.js" integrity="sha384-BBtl+eGJRgqQAUMxJ7pMwbEyER4l1g+O15P+16Ep7Q9Q+zqX6gSbd85u4mG4QzX+" crossorigin="anonymous"></script>
-
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
     <!-- FontAwesome icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
-        integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
-        crossorigin="anonymous" referrerpolicy="no-referrer" />
-
-    <!-- Include your custom navbar script with defer -->
-
-    <style type="text/css">
-        /* Unique identifier: registration */
-        .registration-body {
-            background: rgb(67, 194, 217);
-        }
-
-        .registration-container {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-        }
-
-        .registration-form {
-            max-width: 400px;
-            background-color: white;
-            padding: 25px;
-            border-radius: 20px;
-            text-align: center;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-        }
-
-        .registration-form h2 {
-            text-align: center;
-        }
-
-        .registration-form p {
-            text-align: center;
-        }
-
-        .registration-form .user-icon {
-            font-size: 2rem;
-            margin-bottom: 15px;
-        }
-
-        .registration-form .form-group {
-            margin-bottom: 15px;
-        }
-
-        .registration-form .btn-block {
-            width: 100%;
-        }
-
-        /* Add this style to your CSS file or inline style */
-        .registration-bubble {
-            background-color: #4CAF50;
-            color: white;
-            text-align: center;
-            border-radius: 10px;
-            padding: 10px;
-            position: absolute;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-        }
-
-        .registration-message-bubble {
-            position: relative;
-            margin-top: 20px;
-        }
-
-        .registration-brand-link {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            z-index: 1000;
-        }
-
-        .registration-brand-link a {
-            color: white;
-            text-decoration: none;
-            font-weight: bold;
-            font-size: 18px;
-        }
-    </style>
-
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="/styles/style.css" type="text/css">
+    <script src="/scripts/registration-scripts.js"></script>
 </head>
 <body class="registration-body">
     <div class="registration-brand-link">
         <a href="/index" class="navbar-brand">Mood Trace</a>
     </div>
     <div class="registration-container">
-        <form class="registration-form" action="/register" method="post" name="registrationForm" onsubmit="return validateForm()">
+        <form class="registration-form" action="/register" method="POST" name="registrationForm" onsubmit="return validateForm()">
             <span class="user-icon"><i class="fas fa-user"></i></span>
             <h2>Register</h2>
             <p>Create your account</p>
@@ -117,6 +30,8 @@
                     </div>
                 </div>
             </div>
+        
+           
             <div class="form-group">
                 <input type="email" class="form-control" name="email" placeholder="Email Address">
             </div>
@@ -134,42 +49,17 @@
             </div>
             <input type="submit" class="btn btn-success btn-block" name="submit" value="Submit">
             <p>Already have an account? <a href="/Login">Login</a></p>
-
-            <!-- Registration message bubble inside the form -->
-            <% if (registrationMessage) { %>
-                <div class="registration-bubble" style="color: white;">
+           
+            <!-- Display error messages if they exist -->
+            <div id="errorMessages" class="alert alert-danger" role="alert" <% if (!registrationMessage) { %>style="display: none;"<% } %>>
+                <% if (registrationMessage) { %>
                     <p><%= registrationMessage %></p>
-                </div>
-            <% } %>
+                <% } %>
+            </div>
+            
+            </div>
         </form>
-
-        <!-- Move the script outside the form -->
-        <script type="module" src="header/navbar.js" defer></script>
-        <script>
-            function validateForm() {
-                var firstName = document.forms["registrationForm"]["firstname"].value;
-                var lastName = document.forms["registrationForm"]["lastname"].value;
-                var email = document.forms["registrationForm"]["email"].value;
-                var password = document.forms["registrationForm"]["password"].value;
-                var confirmPassword = document.forms["registrationForm"]["confirmpassword"].value;
-
-                // Password length validation
-                if (password.length < 8) {
-                    alert("Password must be at least 8 characters long");
-                    return false;
-                }
-
-                var registeredEmails = ["example@email.com", "another@example.com"]; // Replace with your registered emails
-                if (registeredEmails.includes(email)) {
-                    alert("Email address is already registered");
-                    return false;
-                }
-
-                // Other validations can be added as needed
-
-                return true;
-            }
-        </script>
     </div>
+   
 </body>
 </html>
