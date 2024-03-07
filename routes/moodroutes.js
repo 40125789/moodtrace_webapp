@@ -19,6 +19,7 @@ router.get('/getemotionalvalues', isAuth, controller.getemotionalValues )
 router.get('/registersuccess',controller.getRegisterSuccess);
 router.get('/Forgetpassword', controller.getforgetpassword);
 router.get('/api/apiKey', controller.getAPIkey);
+router.get('/resetpassword', controller.passwordreset);
 
 // DELETE method to delete a snapshot record
 router.delete('/views/deletemood/:moodId',isAuth,controller.deleteMood);
@@ -32,5 +33,8 @@ router.post('/register', controller.postRegister);
 router.post('/login', controller.postLogin);
 // Handle password reset form submission
 router.post('/forgetpassword', controller.postForgetPassword);
+
+router.post('/resetpassword', controller.postNewPassword);
+
 
 module.exports = router;

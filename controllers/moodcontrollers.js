@@ -511,6 +511,17 @@ exports.getforgetpassword = (req, res) => {
 };
 
 
+exports.passwordreset = (req, res) => {
+    let message = ''; // Initialize message variable
+    let type = '';
+    // Logic to determine the message based on the query parameters or other conditions
+    const token = req.query.token;
+   
+    // Assuming you have a 'resetpassword' template for rendering the password reset page
+    res.render('resetpassword', { message, type, token }); // Pass the message and token to the template
+};
+
+
 exports.postForgetPassword = async (req, res) => {
     const { email } = req.body;
 
@@ -534,6 +545,43 @@ exports.postForgetPassword = async (req, res) => {
         } else {
             // Handle other errors appropriately
             res.status(500).send('Internal Server Error');
+        }
+    }
+};
+
+exports.postNewPassword = async (req, res) => {
+    const { token, newPassword, confirmPassword } = req.body;
+
+    console.log('Token:', token); // Logging the token from the request body
+
+    try {
+        // Make a POST request to the server endpoint
+        const response = await axios.post('http://localhost:3002/resetpassword', { token, newPassword, confirmPassword });
+
+        // Extract the message and type from the response data
+        const { message, type } = response.data;
+
+        // Handle success response
+        console.log('Response:', message);
+        // Redirect or show a success message to the user
+        res.render('resetpassword', { message, token, type });
+    } catch (error) {
+        // Handle error
+        if (error.response) {
+            // The request was made and the server responded with a status code
+            console.error('Server Error:', error.response.data);
+            // Send error message as JSON response
+            res.render('resetpassword', { message: error.response.data.message, token, type: 'error' });
+        } else if (error.request) {
+            // The request was made but no response was received
+            console.error('Request Error:', error.request);
+            // Send error message as JSON response
+            res.status(500).json({ message: 'Request Error', type: 'error' });
+        } else {
+            // Something happened in setting up the request that triggered an Error
+            console.error('Error:', error.message);
+            // Send error message as JSON response
+            res.status(500).json({ message: 'Internal Error', type: 'error' });
         }
     }
 };
