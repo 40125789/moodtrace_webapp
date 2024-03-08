@@ -587,10 +587,6 @@ exports.postNewPassword = async (req, res) => {
 };
 
 
-
-
-
-
 exports.getLogout = (req, res) => {
     req.session.destroy(err => {
         if (err) {
@@ -601,4 +597,9 @@ exports.getLogout = (req, res) => {
         
         res.redirect('/login'); 
     });
+};
+
+exports.getNotFound = (req, res) => {
+res.status(404);
+res.send('<h1>Page Not Found</h1>');
 };

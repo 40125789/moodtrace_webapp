@@ -36,5 +36,7 @@ router.post('/forgetpassword', controller.postForgetPassword);
 
 router.post('/resetpassword', controller.postNewPassword);
 
+router.get('*', controller.getNotFound);
+
 
 module.exports = router;
