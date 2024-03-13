@@ -505,7 +505,7 @@ console.log(`User successfully registered`);
 };
 
 exports.getforgetpassword = (req, res) => {
-    const message = ""; // You may want to change this to an appropriate initial value
+    const message = ""; 
     const sentResetLink = false; // Set the initial value of sentResetLink
     res.render('forgetpassword', { message, sentResetLink }); // Pass both message and sentResetLink to the template
 };

@@ -13,7 +13,7 @@ router.get('/index', controller.getIndex);
 router.get('/login', controller.getLogin);
 router.get('/views/editdeletetrigger', isAuth,controller.getSelectedMood);
 router.get('/logout',controller.getLogout);
-router.get('/api/contextual-triggers', controller.getContextualTriggers);
+router.get('/getcontextualtriggers', controller.getContextualTriggers);
 router.get('/Register', controller.getRegister);
 router.get('/getemotionalvalues', isAuth, controller.getemotionalValues )
 router.get('/registersuccess',controller.getRegisterSuccess);
@@ -31,11 +31,11 @@ router.post('/record', isAuth,controller.postNewSnapshot);
 router.post('/register', controller.postRegister);
 // Handle login form submission
 router.post('/login', controller.postLogin);
-// Handle password reset form submission
+// Handle password reset link form submission
 router.post('/forgetpassword', controller.postForgetPassword);
-
+// Handle password update form submission
 router.post('/resetpassword', controller.postNewPassword);
-
+//Handle "Page not found" error
 router.get('*', controller.getNotFound);
 
 

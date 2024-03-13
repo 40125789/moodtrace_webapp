@@ -121,7 +121,7 @@
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         // Fetch predefined contextual triggers from the server and populate the dropdown
-        fetch('/api/contextual-triggers') // Adjust the API endpoint accordingly
+        fetch('/getcontextualtriggers') // Adjust the API endpoint accordingly
             .then(response => response.json())
             .then(data => {
                 const dropdown = $('#contextualTriggerDropdown');
@@ -201,7 +201,7 @@
         // Clear any previous validation error
         datetimeErrorDiv.textContent = '';
 
-        // Check if emotion levels are provided (you may customize this based on your requirements)
+        // Check if emotion levels are provided 
         const emotionLevels = ['enjoymentLevel', 'sadnessLevel', 'angerLevel', 'contemptLevel', 'disgustLevel', 'fearLevel', 'surpriseLevel'];
         for (const level of emotionLevels) {
             const levelInput = document.getElementById(level);
@@ -234,6 +234,14 @@
 </body>
 
 </html>
+
+
+
+
+
+
+
+
 
 
 

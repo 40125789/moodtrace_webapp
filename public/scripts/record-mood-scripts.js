@@ -67,7 +67,7 @@
 
     $(document).ready(function() {
         // Fetch predefined contextual triggers from the server and populate the dropdown
-        fetch('/api/contextual-triggers') // Adjust the API endpoint accordingly
+        fetch('/getcontextualtriggers') // Adjust the API endpoint accordingly
             .then(response => response.json())
             .then(data => {
                 const dropdown = $('#contextualTriggerDropdown');
@@ -93,4 +93,3 @@
             })
             .catch(error => console.error('Error fetching contextual triggers:', error));
     });
-
